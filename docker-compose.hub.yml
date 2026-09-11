@@ -10,6 +10,7 @@ services:
       - '3306:3306'
     volumes:
       - hub-db-data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${HUB_DB_PASSWORD:-hubdev}']
       interval: 5s
@@ -45,6 +46,34 @@ services:
       hub-db:
         condition: service_healthy
 
+  eventando-backend:
+    build:
+      context: ../eventando-manager
+      dockerfile: Dockerfile.dev
+    restart: always
+    env_file:
+      - path: ../eventando-manager/.env
+        required: false
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 1341
+      DATABASE_CLIENT: mysql2
+      DATABASE_HOST: hub-db
+      DATABASE_PORT: 3306
+      DATABASE_NAME: ${EVENTANDO_DB_NAME:-event-launch}
+      DATABASE_USERNAME: root
+      DATABASE_PASSWORD: ${HUB_DB_PASSWORD:-hubdev}
+      DATABASE_SSL: 'false'
+    ports:
+      - '1341:1341'
+    volumes:
+      - ../eventando-manager:/opt/app
+      - /opt/app/node_modules
+    depends_on:
+      hub-db:
+        condition: service_healthy
+
   hub-bff:
     build:
       context: ../hub-community-bff
@@ -60,6 +89,7 @@ services:
       NODE_ENV: development
       PORT: 4001
       MANAGER_URL: http://hub-backend:1340
+      EVENTANDO_MANAGER_URL: http://eventando-backend:1341
       FRONTEND_URL: http://localhost:4010
       CHOKIDAR_USEPOLLING: 'true'
     ports:
@@ -69,6 +99,7 @@ services:
       - /opt/app/node_modules
     depends_on:
       - hub-backend
+      - eventando-backend
 
   hub-frontend:
     build:
