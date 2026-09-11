@@ -24,7 +24,6 @@ const styles = StyleSheet.create({
   page: {
     fontFamily: 'Helvetica',
     backgroundColor: '#ffffff',
-    padding: 40,
     position: 'relative',
   },
   background: {
@@ -32,9 +31,14 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     width: 841.89,
-    height: 595.28,
+    // 0.01pt under the page's full height (595.28pt): react-pdf's Yoga layout
+    // engine computes box heights in float32, so a background sized to the
+    // exact page height can come out a hair taller than the page's content
+    // area and trip its "can't wrap between pages" warning. The 0.01pt
+    // margin (~0.0035mm) is visually imperceptible.
+    height: 595.27,
   },
-  content: { flex: 1, flexDirection: 'column', justifyContent: 'space-between' },
+  content: { flex: 1, flexDirection: 'column', justifyContent: 'space-between', padding: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 60 },
   logo: { maxHeight: 60, maxWidth: 200, objectFit: 'contain' },
   issuer: { fontSize: 12, color: '#475569' },
