@@ -38,6 +38,7 @@ describe('CertificateDocument', () => {
     const buffer = await render({});
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
     expect(buffer.length).toBeGreaterThan(1000);
+    expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
   });
 
   it('renders with background, logo, 8 sponsors and 4 signatures', async () => {
@@ -56,5 +57,6 @@ describe('CertificateDocument', () => {
       ],
     });
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+    expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
   });
 }, 30_000);
