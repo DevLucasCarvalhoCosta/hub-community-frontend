@@ -623,3 +623,91 @@ export interface CreateAttendanceResponse {
     message?: string;
   };
 }
+
+// Certificates (certificado de participação)
+export interface CertificateSponsor {
+  name: string;
+  logo?: string | null;
+  logo_id?: string | null;
+  url?: string | null;
+}
+
+export interface CertificateSignature {
+  name: string;
+  role?: string | null;
+  image?: string | null;
+  image_id?: string | null;
+}
+
+export interface CertificateConfig {
+  id?: string;
+  enabled: boolean;
+  allow_self_request: boolean;
+  title?: string | null;
+  body_template?: string | null;
+  workload_hours?: number | null;
+  issuer_name?: string | null;
+  primary_color?: string | null;
+  logo?: string | null;
+  logo_id?: string | null;
+  background?: string | null;
+  background_id?: string | null;
+  sponsors: CertificateSponsor[];
+  signatures: CertificateSignature[];
+}
+
+export interface CertificateConfigInput {
+  enabled?: boolean;
+  allow_self_request?: boolean;
+  title?: string;
+  body_template?: string;
+  workload_hours?: number | null;
+  issuer_name?: string;
+  primary_color?: string;
+  logo?: string | null; // Strapi media id
+  background?: string | null;
+  sponsors?: { name: string; logo: string; url?: string }[];
+  signatures?: { name: string; role?: string; image?: string | null }[];
+}
+
+export type CertificateSource = 'ATTENDANCE' | 'SELF_REQUEST' | 'ADMIN';
+
+export interface CertificateEvent {
+  id: string;
+  documentId?: string;
+  slug?: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  is_online?: boolean;
+  location?: EventLocation | null;
+  communities?: { title: string }[];
+}
+
+export interface Certificate {
+  id?: string;
+  code: string;
+  name: string;
+  identifier: string;
+  email: string;
+  source: CertificateSource;
+  issued_at?: string | null;
+  sent_at?: string | null;
+  revoked_at?: string | null;
+  event?: CertificateEvent | null;
+}
+
+export interface LookupResult {
+  certificate?: Certificate | null;
+  eligible_by_attendance: boolean;
+  self_request_allowed: boolean;
+  event_ended: boolean;
+  revoked: boolean;
+}
+
+export interface CertificateConfigResponse { certificateConfig: CertificateConfig | null }
+export interface CertificateByCodeResponse { certificateByCode: Certificate | null }
+export interface LookupCertificateResponse { lookupCertificate: LookupResult }
+export interface UpsertCertificateConfigResponse { upsertCertificateConfig: CertificateConfig }
+export interface CopyCertificateConfigResponse { copyCertificateConfig: CertificateConfig }
+export interface RequestCertificateResponse { requestCertificate: Certificate }

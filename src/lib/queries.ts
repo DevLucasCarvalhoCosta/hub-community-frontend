@@ -869,3 +869,135 @@ export const CREATE_ATTENDANCE = gql`
     }
   }
 `;
+
+// Certificates (certificado de participação)
+export const CERTIFICATE_FIELDS = gql`
+  fragment CertificateFields on Certificate {
+    id
+    code
+    name
+    identifier
+    email
+    source
+    issued_at
+    sent_at
+    revoked_at
+    event {
+      id
+      documentId
+      slug
+      title
+      start_date
+      end_date
+      is_online
+      location {
+        title
+        city
+      }
+      communities {
+        title
+      }
+    }
+  }
+`;
+
+export const CERTIFICATE_CONFIG_FIELDS = gql`
+  fragment CertificateConfigFields on CertificateConfig {
+    id
+    enabled
+    allow_self_request
+    title
+    body_template
+    workload_hours
+    issuer_name
+    primary_color
+    logo
+    logo_id
+    background
+    background_id
+    sponsors {
+      name
+      logo
+      logo_id
+      url
+    }
+    signatures {
+      name
+      role
+      image
+      image_id
+    }
+  }
+`;
+
+export const GET_CERTIFICATE_CONFIG = gql`
+  ${CERTIFICATE_CONFIG_FIELDS}
+  query GetCertificateConfig($eventId: String!) {
+    certificateConfig(eventId: $eventId) {
+      ...CertificateConfigFields
+    }
+  }
+`;
+
+export const GET_CERTIFICATE_BY_CODE = gql`
+  ${CERTIFICATE_FIELDS}
+  query GetCertificateByCode($code: String!) {
+    certificateByCode(code: $code) {
+      ...CertificateFields
+    }
+  }
+`;
+
+export const LOOKUP_CERTIFICATE = gql`
+  ${CERTIFICATE_FIELDS}
+  query LookupCertificate($eventId: String!, $identifier: String!) {
+    lookupCertificate(eventId: $eventId, identifier: $identifier) {
+      certificate {
+        ...CertificateFields
+      }
+      eligible_by_attendance
+      self_request_allowed
+      event_ended
+      revoked
+    }
+  }
+`;
+
+export const UPSERT_CERTIFICATE_CONFIG = gql`
+  ${CERTIFICATE_CONFIG_FIELDS}
+  mutation UpsertCertificateConfig($eventId: String!, $data: CertificateConfigInput!) {
+    upsertCertificateConfig(eventId: $eventId, data: $data) {
+      ...CertificateConfigFields
+    }
+  }
+`;
+
+export const COPY_CERTIFICATE_CONFIG = gql`
+  ${CERTIFICATE_CONFIG_FIELDS}
+  mutation CopyCertificateConfig($fromEventId: String!, $toEventId: String!) {
+    copyCertificateConfig(fromEventId: $fromEventId, toEventId: $toEventId) {
+      ...CertificateConfigFields
+    }
+  }
+`;
+
+export const REQUEST_CERTIFICATE = gql`
+  ${CERTIFICATE_FIELDS}
+  mutation RequestCertificate(
+    $eventId: String!
+    $name: String!
+    $identifier: String!
+    $email: String!
+    $phone: String
+  ) {
+    requestCertificate(
+      eventId: $eventId
+      name: $name
+      identifier: $identifier
+      email: $email
+      phone: $phone
+    ) {
+      ...CertificateFields
+    }
+  }
+`;
