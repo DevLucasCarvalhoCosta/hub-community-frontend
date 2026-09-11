@@ -1532,7 +1532,7 @@ Esperado: o certificado da Task 2 (use o código impresso lá).
 query { lookupCertificate(eventId: "EV", identifier: "123.456.789-09") {
   certificate { code } eligible_by_attendance self_request_allowed event_ended } }
 ```
-Esperado: erro `CPF inválido.` (esse CPF de teste não tem dígitos válidos). Repita com `529.982.247-25`: `certificate: null`, `eligible_by_attendance: false`, `self_request_allowed: false` (config inexistente).
+Esperado: devolve o certificado da Task 2 (`certificate.code` igual ao impresso lá — `123.456.789-09` tem dígitos verificadores válidos e o `identifier` coincide). Repita com `529.982.247-25`: `certificate: null`, `eligible_by_attendance: false`, `self_request_allowed: false` (config inexistente). Repita com `111.111.111-11`: erro `CPF inválido.`
 
 Com header `authorization: Bearer <token de usuário logado no front>`:
 ```graphql
@@ -3347,9 +3347,11 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
   const [findSourceEvent] = useLazyQuery<EventResponse>(GET_EVENT_BY_SLUG_OR_ID);
   const [copySource, setCopySource] = useState('');
 
-  const watched = form.watch();
-  const debounced = useDebounce(watched, 500);
-  const previewConfig = useMemo(() => toPreviewConfig(debounced), [debounced]);
+  // Debounce a serialized snapshot: form.watch() may hand back a new object reference on
+  // every render, and a string compares by value so the effect only fires on real changes.
+  const watchedJson = JSON.stringify(form.watch());
+  const debouncedJson = useDebounce(watchedJson, 500);
+  const previewConfig = useMemo(() => toPreviewConfig(JSON.parse(debouncedJson) as FormValues), [debouncedJson]);
   const computedHours = workloadHours({ workload_hours: null }, event);
 
   const insertPlaceholder = (key: string) => {
