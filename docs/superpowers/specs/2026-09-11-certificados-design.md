@@ -251,8 +251,9 @@ patrocinadores (logos com altura fixa, centralizados, até 8 por linha); assinat
 distribuídas igualmente, imagem opcional sobre a linha); rodapé com `code`, `issuer_name` e
 QR code (gerado como data URL com `qrcode` — o `qrcode.react` existente é só para DOM).
 
-Fonte: Inter (regular/bold) em `public/fonts/`, registrada com `Font.register`, para render
-idêntico em browser e Node.
+Fonte: Helvetica (built-in do PDF, sem `Font.register`). As 14 fontes padrão usam WinAnsi,
+que cobre os acentos do português; evita servir arquivos de fonte e garante render idêntico em
+browser e Node.
 
 Imagens: no Node o react-pdf baixa por URL; no browser precisa de CORS, então as URLs do
 Strapi passam por `/api/og-image?url=` (proxy existente, já restringe domínio). A função
@@ -281,7 +282,7 @@ export function isValidCpf(cpf: string): boolean
 
 #### Rotas de servidor (Next route handlers)
 
-- `GET /api/certificates/[code].pdf` — busca `certificateByCode` + `certificateConfig` no
+- `GET /api/certificates/[code]/pdf` — busca `certificateByCode` + `certificateConfig` no
   BFF, `renderToBuffer(<CertificateDocument/>)`, responde `application/pdf` com
   `Content-Disposition: attachment; filename="<certificateFileName>"`. 404 se não existe ou
   revogado. É o link estável usado no e-mail.
@@ -304,8 +305,9 @@ cursor), `workload_hours` (placeholder mostra o valor calculado), `issuer_name`,
 `primary_color`, `logo` e `background` (upload via `/api/upload` reaproveitando
 `image-crop-dialog`), patrocinadores (lista com adicionar/remover/reordenar, cada item com
 nome, URL e upload de logo) e assinaturas (idem, máx. 4, com nome, cargo, imagem opcional).
-Botão "Copiar de outro evento" abre select com eventos que já têm config; ao confirmar chama
-`copyCertificateConfig` e recarrega o form. Salvar chama `upsertCertificateConfig`. O preview
+Botão "Copiar de outro evento" recebe o slug (ou id) do evento de origem; ao confirmar
+resolve o evento via `eventBySlugOrId`, chama `copyCertificateConfig` e recarrega o form
+(a cópia vem com `enabled: false`). Salvar chama `upsertCertificateConfig`. O preview
 é atualizado com debounce de 500 ms sobre os valores do form.
 
 **Aba Emissão.** Tabela de `certificateCandidates`: nome (editável inline antes de emitir,
@@ -328,8 +330,9 @@ Continua bloqueada até `end_date`. Passa a bloquear também quando `!config.ena
 (mensagem "Certificados ainda não disponíveis para este evento").
 
 1. Campo CPF → `lookupCertificate`.
-2. Se voltou `certificate`: mostra card com nome, evento, código e botão **Baixar PDF**
-   (client-side, `pdf(<Doc/>).toBlob()`), mais link para a verificação.
+2. Se voltou `certificate`: mostra card com nome, evento, código, preview e botão **Baixar
+   PDF** (link para `/api/certificates/[code]/pdf` — um único caminho de download em todo o
+   site), mais link para a verificação.
 3. Se não, e `self_request_allowed`: mostra o form atual (nome, CPF pré-preenchido, e-mail,
    WhatsApp) → `requestCertificate` → mesmo card de download.
 4. Se não, e `!self_request_allowed`: "Não encontramos sua participação. Fale com a
@@ -339,7 +342,7 @@ O `eventId` padrão hardcoded (`q1y8wohrfis0ox81y5xr125w`) sai; sem `?event` a p
 erro amigável.
 
 **`/certificado/[code]`** — página do certificado (destino do e-mail): card + preview
-(`PDFViewer`) + Baixar PDF (link para `/api/certificates/[code].pdf`). 404 amigável se
+(`PDFViewer`) + Baixar PDF (link para `/api/certificates/[code]/pdf`). 404 amigável se
 revogado.
 
 **`/certificado/verificar/[code]`** — verificação pública: nome, evento, data, emissor,
@@ -384,7 +387,7 @@ Cada etapa é mergeável e funciona sozinha.
 2. **BFF**: `certificateConfig`/`upsert`/`copy`, `certificateByCode`, `lookupCertificate`,
    `requestCertificate`.
 3. **Frontend**: `lib/certificate.ts`, `CertificateDocument`, aba Modelo com preview,
-   `/api/certificates/[code].pdf`, páginas `/certificado`, `/certificado/[code]`,
+   `/api/certificates/[code]/pdf`, páginas `/certificado`, `/certificado/[code]`,
    `/certificado/verificar/[code]`. → auto-atendimento no ar.
 4. **BFF**: `certificateCandidates`, `issueCertificates`, template de e-mail, Vitest.
 5. **Frontend**: aba Emissão, `/api/certificates/zip`.
@@ -422,9 +425,8 @@ hub-community-frontend/
   src/app/certificado/page.tsx                                (reescrita)
   src/app/certificado/[code]/page.tsx                         (novo)
   src/app/certificado/verificar/[code]/page.tsx               (novo)
-  src/app/api/certificates/[code].pdf/route.ts                (novo)
+  src/app/api/certificates/[code]/pdf/route.ts                (novo)
   src/app/api/certificates/zip/route.ts                       (novo)
   src/lib/queries.ts, src/lib/types.ts                        (+ operações e tipos)
-  public/fonts/Inter-*.ttf                                    (novo)
   package.json                                                (+ @react-pdf/renderer, jszip, qrcode)
 ```
