@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchCertificateBundle, renderCertificatePdf } from '@/lib/certificate-server';
+import { fetchCertificateBundle, renderCertificatePdf, siteBaseUrl } from '@/lib/certificate-server';
 import { certificateFileName } from '@/lib/certificate';
 
 export const runtime = 'nodejs';
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+    const baseUrl = siteBaseUrl(request);
     const pdf = await renderCertificatePdf(bundle, baseUrl);
     const filename = certificateFileName(bundle.event, bundle.certificate.name);
     return new NextResponse(new Uint8Array(pdf), {
