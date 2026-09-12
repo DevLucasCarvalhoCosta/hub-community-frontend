@@ -6,6 +6,7 @@ import { useQuery } from '@apollo/client';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { FadeIn } from '@/components/animations';
 import { CertificateConfigForm } from '@/components/admin/certificate-config-form';
+import { CertificateIssueTable } from '@/components/admin/certificate-issue-table';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GET_CERTIFICATE_CONFIG, GET_EVENT_BY_SLUG_OR_ID } from '@/lib/queries';
@@ -57,7 +58,7 @@ export default function CertificadosAdminPage() {
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="modelo">Modelo</TabsTrigger>
-            <TabsTrigger value="emissao" disabled>Emissão (em breve)</TabsTrigger>
+            <TabsTrigger value="emissao">Emissão</TabsTrigger>
           </TabsList>
           <TabsContent value="modelo">
             <CertificateConfigForm
@@ -69,6 +70,9 @@ export default function CertificadosAdminPage() {
                 refetch();
               }}
             />
+          </TabsContent>
+          <TabsContent value="emissao">
+            <CertificateIssueTable eventId={eventId} eventSlug={event.slug || eventId} />
           </TabsContent>
         </Tabs>
       </div>
