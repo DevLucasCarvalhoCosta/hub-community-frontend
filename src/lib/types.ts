@@ -711,3 +711,30 @@ export interface LookupCertificateResponse { lookupCertificate: LookupResult }
 export interface UpsertCertificateConfigResponse { upsertCertificateConfig: CertificateConfig }
 export interface CopyCertificateConfigResponse { copyCertificateConfig: CertificateConfig }
 export interface RequestCertificateResponse { requestCertificate: Certificate }
+
+export type CandidateSource = 'SIGNUP' | 'ATTENDANCE' | 'REQUEST';
+
+export interface CertificateCandidate {
+  key: string;
+  name: string;
+  email?: string | null;
+  identifier?: string | null;
+  phone?: string | null;
+  sources: CandidateSource[];
+  checked_in?: boolean | null;
+  certificate?: Certificate | null;
+}
+
+export interface CertificateCandidatesResponse { certificateCandidates: CertificateCandidate[] }
+
+export interface IssueEntryInput { name: string; identifier: string; email: string }
+export interface IssueActionsInput { register: boolean; email: boolean }
+
+export interface IssueResult {
+  issued: number;
+  emailed: number;
+  certificates: Certificate[];
+  errors: string[];
+}
+
+export interface IssueCertificatesResponse { issueCertificates: IssueResult }

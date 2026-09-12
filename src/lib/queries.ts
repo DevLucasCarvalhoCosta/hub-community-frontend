@@ -1001,3 +1001,40 @@ export const REQUEST_CERTIFICATE = gql`
     }
   }
 `;
+
+export const GET_CERTIFICATE_CANDIDATES = gql`
+  query GetCertificateCandidates($eventId: String!) {
+    certificateCandidates(eventId: $eventId) {
+      key
+      name
+      email
+      identifier
+      phone
+      sources
+      checked_in
+      certificate {
+        id
+        code
+        name
+        source
+        issued_at
+        sent_at
+      }
+    }
+  }
+`;
+
+export const ISSUE_CERTIFICATES = gql`
+  mutation IssueCertificates($eventId: String!, $entries: [IssueEntryInput!]!, $actions: IssueActionsInput!) {
+    issueCertificates(eventId: $eventId, entries: $entries, actions: $actions) {
+      issued
+      emailed
+      errors
+      certificates {
+        code
+        identifier
+        sent_at
+      }
+    }
+  }
+`;
