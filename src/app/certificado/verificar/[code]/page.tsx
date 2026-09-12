@@ -2,7 +2,8 @@
 
 import { useParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
-import { Loader2, ShieldCheck, ShieldX } from 'lucide-react';
+import { AlertCircle, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { GET_CERTIFICATE_BY_CODE } from '@/lib/queries';
 import { formatDate } from '@/lib/certificate';
@@ -11,7 +12,7 @@ import type { CertificateByCodeResponse } from '@/lib/types';
 export default function VerificarCertificadoPage() {
   const params = useParams();
   const code = String(params?.code || '').toUpperCase();
-  const { data, loading } = useQuery<CertificateByCodeResponse>(GET_CERTIFICATE_BY_CODE, {
+  const { data, loading, error, refetch } = useQuery<CertificateByCodeResponse>(GET_CERTIFICATE_BY_CODE, {
     variables: { code },
     skip: !code,
   });
@@ -20,6 +21,21 @@ export default function VerificarCertificadoPage() {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container max-w-2xl mx-auto py-20 px-4">
+        <Card className="text-center border-amber-500/30">
+          <CardContent className="pt-10 pb-8 flex flex-col items-center">
+            <AlertCircle className="w-16 h-16 text-amber-500 mb-4" />
+            <h1 className="text-2xl font-bold mb-1">Não foi possível verificar agora</h1>
+            <p className="text-muted-foreground mb-6">Tente novamente em instantes.</p>
+            <Button variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

@@ -21,13 +21,19 @@ export default function CertificatePreview({ config, event, certificate, height 
 
   useEffect(() => {
     let active = true;
-    generateQrDataUrl(url).then((data) => active && setQrDataUrl(data));
+    generateQrDataUrl(url)
+      .then((data) => {
+        if (active) setQrDataUrl(data);
+      })
+      .catch(() => {
+        if (active) setQrDataUrl('');
+      });
     return () => {
       active = false;
     };
   }, [url]);
 
-  if (!qrDataUrl) return <Skeleton className="w-full" style={{ height }} />;
+  if (qrDataUrl === null) return <Skeleton className="w-full" style={{ height }} />;
 
   return (
     <PDFViewer width="100%" height={height} showToolbar={false} className="rounded-lg border">

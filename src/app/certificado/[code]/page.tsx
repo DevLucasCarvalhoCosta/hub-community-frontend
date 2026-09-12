@@ -3,6 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useQuery } from '@apollo/client';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { CertificateCard } from '@/components/certificate/certificate-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { GET_CERTIFICATE_BY_CODE, GET_CERTIFICATE_CONFIG } from '@/lib/queries';
@@ -12,7 +13,7 @@ export default function CertificadoPorCodigoPage() {
   const params = useParams();
   const code = String(params?.code || '').toUpperCase();
 
-  const { data, loading } = useQuery<CertificateByCodeResponse>(GET_CERTIFICATE_BY_CODE, {
+  const { data, loading, error, refetch } = useQuery<CertificateByCodeResponse>(GET_CERTIFICATE_BY_CODE, {
     variables: { code },
     skip: !code,
   });
@@ -28,6 +29,21 @@ export default function CertificadoPorCodigoPage() {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container max-w-2xl mx-auto py-20 px-4">
+        <Card className="text-center border-amber-500/30">
+          <CardContent className="pt-10 pb-8 flex flex-col items-center">
+            <AlertCircle className="w-12 h-12 text-amber-500 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Não foi possível carregar o certificado</h2>
+            <p className="text-muted-foreground mb-6">Tente novamente em instantes.</p>
+            <Button variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

@@ -35,6 +35,12 @@ export default function CertificadoPage() {
   );
 }
 
+function errorMessage(err: unknown): string {
+  const graphQLErrors = (err as { graphQLErrors?: { message: string }[] } | undefined)?.graphQLErrors;
+  if (graphQLErrors?.length) return graphQLErrors[0].message;
+  return 'Não foi possível conectar. Tente novamente.';
+}
+
 function Message({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <div className="container max-w-2xl mx-auto py-20 px-4 min-h-[80vh] flex items-center justify-center">
@@ -88,16 +94,16 @@ function CertificadoContent() {
     }
     const { data, error: qError } = await lookup({ variables: { eventId, identifier: normalizeIdentifier(cpf) } });
     if (qError) {
-      setError(qError.message);
+      setError(errorMessage(qError));
       return;
     }
     const result = data?.lookupCertificate;
-    if (result?.certificate) {
-      setCertificate(result.certificate);
-      return;
-    }
     if (result?.revoked) {
       setLookupState('revoked');
+      return;
+    }
+    if (result?.certificate) {
+      setCertificate(result.certificate);
       return;
     }
     setLookupState(result?.self_request_allowed ? 'not_found_allowed' : 'not_found_blocked');
@@ -118,7 +124,7 @@ function CertificadoContent() {
       });
       if (data?.requestCertificate) setCertificate(data.requestCertificate);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocorreu um erro inesperado.');
+      setError(errorMessage(err));
     }
   };
 
@@ -249,7 +255,7 @@ function CertificadoContent() {
                 <Input id="phone_number" type="tel" value={form.phone_number} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} disabled={requesting} className="h-12" maxLength={15} />
               </div>
               <div className="flex gap-3">
-                <Button type="button" variant="outline" className="h-12" onClick={() => setLookupState('idle')} disabled={requesting}>Voltar</Button>
+                <Button type="button" variant="outline" className="h-12" onClick={() => { setLookupState('idle'); setError(''); }} disabled={requesting}>Voltar</Button>
                 <Button type="submit" className="flex-1 h-12 text-lg font-medium" disabled={requesting}>
                   {requesting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
                   Emitir certificado
