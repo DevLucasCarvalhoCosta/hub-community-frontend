@@ -47,6 +47,7 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
   const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actions, setActions] = useState<IssueOptions>({ register: true, email: false, zip: false });
+  const [lastOptions, setLastOptions] = useState<IssueOptions>({ register: true, email: false, zip: false });
   const [zipping, setZipping] = useState(false);
 
   const candidates = data?.certificateCandidates ?? [];
@@ -55,6 +56,11 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
     name: edits[c.key]?.name ?? c.name,
     identifier: normalizeIdentifier(edits[c.key]?.identifier ?? c.identifier ?? ''),
   });
+
+  // Mirrors the BFF's `(entry.name || '').trim() || entry.email || cpf` label used to prefix
+  // each error string (see hub-community-bff Certificate resolver, issueCertificates loop).
+  const labelFor = (entry: { name: string; identifier: string; email: string }) =>
+    (entry.name || '').trim() || entry.email || entry.identifier;
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -70,12 +76,13 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
   }, [candidates, search, sourceFilter, statusFilter, edits]);
 
   const canIssue = (c: CertificateCandidate) => isValidCpf(effective(c).identifier) && Boolean(c.email);
-  const allFilteredSelected = filtered.length > 0 && filtered.every((c) => selected.has(c.key));
+  const selectable = filtered.filter((c) => canIssue(c) || c.certificate);
+  const allFilteredSelected = selectable.length > 0 && selectable.every((c) => selected.has(c.key));
 
   const toggleAll = () => {
     const next = new Set(selected);
-    if (allFilteredSelected) filtered.forEach((c) => next.delete(c.key));
-    else filtered.forEach((c) => (canIssue(c) || c.certificate) && next.add(c.key));
+    if (allFilteredSelected) selectable.forEach((c) => next.delete(c.key));
+    else selectable.forEach((c) => next.add(c.key));
     setSelected(next);
   };
   const toggle = (key: string) => {
@@ -87,7 +94,10 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
   const setEdit = (key: string, patch: RowEdit) => setEdits({ ...edits, [key]: { ...edits[key], ...patch } });
 
   const downloadZip = async (codes: string[]) => {
-    if (codes.length === 0) return;
+    if (codes.length === 0) {
+      toast({ variant: 'destructive', title: 'ZIP falhou', description: 'Nenhum dos selecionados tem certificado emitido.' });
+      return;
+    }
     setZipping(true);
     try {
       const token = localStorage.getItem('auth_token') || '';
@@ -97,7 +107,7 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ codes: codes.slice(i, i + ZIP_BATCH) }),
         });
-        if (!res.ok) throw new Error((await res.json()).error || 'Falha ao gerar o ZIP');
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Falha ao gerar o ZIP.');
         const url = URL.createObjectURL(await res.blob());
         const a = document.createElement('a');
         a.href = url;
@@ -112,20 +122,36 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
     }
   };
 
-  const runIssue = async (targets: CertificateCandidate[], opts: IssueOptions) => {
+  const runIssue = async (targets: CertificateCandidate[], opts: IssueOptions, extraZipTargets: CertificateCandidate[] = []) => {
     const entries = targets.map((c) => ({ ...effective(c), email: (c.email || '').trim() }));
     try {
       const { data: res } = await issue({ variables: { eventId, entries, actions: { register: opts.register, email: opts.email } } });
       const result = res?.issueCertificates;
       if (!result) return;
 
-      // BFF error strings start with the entry's name — map them back to rows.
-      const nextErrors: Record<string, string> = {};
+      // BFF errors are labelled `${label}: ${msg}` where label = trimmed name -> email -> CPF
+      // (see hub-community-bff Certificate resolver). Match on that prefix, preferring the
+      // longest label when more than one target could match, and strip the prefix for display.
+      const rows = targets.map((c, i) => ({ key: c.key, label: labelFor(entries[i]) }));
+      const matched: Record<string, string> = {};
       result.errors.forEach((msg) => {
-        const hit = targets.find((c) => msg.startsWith(effective(c).name));
-        if (hit) nextErrors[hit.key] = msg;
+        let bestKey: string | null = null;
+        let bestLabel = '';
+        rows.forEach((row) => {
+          const prefix = `${row.label}: `;
+          if (msg.startsWith(prefix) && row.label.length > bestLabel.length) {
+            bestKey = row.key;
+            bestLabel = row.label;
+          }
+        });
+        if (bestKey) matched[bestKey] = msg.slice(bestLabel.length + 2);
       });
-      setRowErrors(nextErrors);
+      setRowErrors((prev) => {
+        const next = { ...prev };
+        targets.forEach((c) => delete next[c.key]);
+        Object.assign(next, matched);
+        return next;
+      });
 
       toast({
         title: 'Emissão concluída',
@@ -133,8 +159,17 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
         variant: result.errors.length ? 'destructive' : undefined,
       });
 
-      if (opts.zip) await downloadZip(result.certificates.map((c) => c.code));
+      if (opts.zip) {
+        const codes = new Set(result.certificates.map((c) => c.code));
+        extraZipTargets.forEach((c) => c.certificate?.code && codes.add(c.certificate.code));
+        await downloadZip(Array.from(codes));
+      }
       setSelected(new Set());
+      setEdits((prev) => {
+        const next = { ...prev };
+        targets.forEach((c) => delete next[c.key]);
+        return next;
+      });
       await refetch();
     } catch (err) {
       toast({ variant: 'destructive', title: 'Erro na emissão', description: err instanceof Error ? err.message : 'Erro' });
@@ -143,6 +178,7 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
 
   const confirmIssue = async () => {
     setDialogOpen(false);
+    setLastOptions(actions);
     const targets = candidates.filter((c) => selected.has(c.key));
     if (!actions.register) {
       // ZIP only: include the rows that already have a certificate.
@@ -150,7 +186,19 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
       await downloadZip(codes);
       return;
     }
-    await runIssue(targets.filter(canIssue), actions);
+    const issuable = targets.filter(canIssue);
+    // Selected rows that already have a certificate but no longer pass canIssue (e.g. no
+    // e-mail, or an edited CPF became invalid): the mutation can't touch them, but a ZIP
+    // export should still include their existing certificate.
+    const alreadyIssuedSkipped = targets.filter((c) => !canIssue(c) && c.certificate);
+    if (issuable.length === 0) {
+      if (actions.zip) {
+        const codes = alreadyIssuedSkipped.map((c) => c.certificate?.code).filter((code): code is string => Boolean(code));
+        await downloadZip(codes);
+      }
+      return;
+    }
+    await runIssue(issuable, actions, alreadyIssuedSkipped);
   };
 
   const exportXlsx = () => {
@@ -265,7 +313,7 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
                         {rowErrors[c.key] ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => runIssue([c], { register: true, email: true, zip: false })} aria-label="Tentar de novo" disabled={issuing}>
+                              <Button variant="ghost" size="icon" onClick={() => runIssue([c], lastOptions)} aria-label="Tentar de novo" disabled={issuing}>
                                 <AlertTriangle className="w-4 h-4 text-destructive" />
                               </Button>
                             </TooltipTrigger>
