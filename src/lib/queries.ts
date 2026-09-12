@@ -906,7 +906,6 @@ export const CERTIFICATE_CONFIG_FIELDS = gql`
     id
     enabled
     allow_self_request
-    participant_signature
     title
     body_template
     workload_hours

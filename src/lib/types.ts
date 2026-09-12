@@ -643,7 +643,6 @@ export interface CertificateConfig {
   id?: string;
   enabled: boolean;
   allow_self_request: boolean;
-  participant_signature: boolean;
   title?: string | null;
   body_template?: string | null;
   workload_hours?: number | null;
@@ -660,7 +659,6 @@ export interface CertificateConfig {
 export interface CertificateConfigInput {
   enabled?: boolean;
   allow_self_request?: boolean;
-  participant_signature?: boolean;
   title?: string;
   body_template?: string;
   workload_hours?: number | null;

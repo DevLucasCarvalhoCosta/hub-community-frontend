@@ -49,7 +49,6 @@ export interface CertificateBundle {
 const EMPTY_CONFIG: CertificateConfig = {
   enabled: false,
   allow_self_request: true,
-  participant_signature: false,
   sponsors: [],
   signatures: [],
 };

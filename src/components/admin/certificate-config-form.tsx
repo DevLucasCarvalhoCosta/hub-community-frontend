@@ -51,7 +51,6 @@ const EMPTY_MEDIA: MediaField = { id: null, url: null };
 const formSchema = z.object({
   enabled: z.boolean(),
   allow_self_request: z.boolean(),
-  participant_signature: z.boolean(),
   title: z.string().max(120, 'Máximo de 120 caracteres'),
   body_template: z.string().max(1000, 'Máximo de 1000 caracteres'),
   workload_hours: z.string().regex(/^(\d+([.,]\d+)?)?$/, 'Use números, ex.: 8 ou 1,5'),
@@ -76,7 +75,6 @@ function toFormValues(config: CertificateConfig | null | undefined): FormValues 
   return {
     enabled: config?.enabled ?? false,
     allow_self_request: config?.allow_self_request ?? true,
-    participant_signature: config?.participant_signature ?? false,
     title: config?.title ?? '',
     body_template: config?.body_template ?? '',
     workload_hours: config?.workload_hours ? String(config.workload_hours).replace('.', ',') : '',
@@ -107,7 +105,6 @@ function toInput(values: FormValues): CertificateConfigInput {
   return {
     enabled: values.enabled,
     allow_self_request: values.allow_self_request,
-    participant_signature: values.participant_signature,
     title: values.title,
     body_template: values.body_template,
     workload_hours: parseHours(values.workload_hours),
@@ -131,7 +128,6 @@ function toPreviewConfig(values: FormValues): CertificateConfigLike {
     background: values.background.url,
     sponsors: values.sponsors.map((s) => ({ name: s.name, url: s.url, logo: s.logo.url })),
     signatures: values.signatures.map((s) => ({ name: s.name, role: s.role, image: s.image.url })),
-    participant_signature: values.participant_signature,
   };
 }
 
@@ -303,15 +299,6 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
                   <div>
                     <FormLabel>Solicitação livre</FormLabel>
                     <FormDescription>Quem não está na lista de presença pode emitir informando os dados.</FormDescription>
-                  </div>
-                  <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="participant_signature" render={({ field }) => (
-                <FormItem className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <FormLabel>Linha de assinatura do participante</FormLabel>
-                    <FormDescription>Adiciona uma linha em branco para o participante assinar, com o nome dele abaixo.</FormDescription>
                   </div>
                   <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 </FormItem>

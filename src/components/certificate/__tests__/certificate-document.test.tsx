@@ -35,7 +35,8 @@ const render = async (config: Parameters<typeof CertificateDocument>[0]['config'
 
 describe('CertificateDocument', () => {
   it('renders a PDF with the minimal config', async () => {
-    // No background → exercises the default double-line frame path.
+    // No background → exercises the default double-line frame path; the participant
+    // signature slot is always present, so this also covers a single-slot row.
     const buffer = await render({});
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
     expect(buffer.length).toBeGreaterThan(1000);
@@ -61,9 +62,8 @@ describe('CertificateDocument', () => {
     expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
   });
 
-  it('renders the participant signature slot with 4 org signatures', async () => {
+  it('renders 5 compact slots with 4 org signatures plus the participant', async () => {
     const buffer = await render({
-      participant_signature: true,
       signatures: [
         { name: 'A', role: 'CEO', image: PNG },
         { name: 'B', role: 'CTO' },
@@ -71,12 +71,6 @@ describe('CertificateDocument', () => {
         { name: 'D', role: 'Org', image: PNG },
       ],
     });
-    expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
-    expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
-  });
-
-  it('renders the participant signature slot alone (no org signatures)', async () => {
-    const buffer = await render({ participant_signature: true });
     expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
     expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
   });

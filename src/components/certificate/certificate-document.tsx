@@ -50,8 +50,10 @@ const styles = StyleSheet.create({
   sponsorsRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16 },
   sponsorLogo: { height: 32, maxWidth: 90, objectFit: 'contain' },
   signaturesRow: { flexDirection: 'row', justifyContent: 'center', gap: 32, marginTop: 10 },
+  // 5 slots (4 org + participant) only fit the 761pt content width with narrower boxes and gap:
+  // 5 × 130 + 4 × 24 = 746.
+  signaturesRowCompact: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 10 },
   signature: { width: 150, alignItems: 'center' },
-  // 5 slots (4 org + participant) only fit the 761pt content width with narrower boxes.
   signatureCompact: { width: 130, alignItems: 'center' },
   signatureImage: { height: 40, maxWidth: 140, objectFit: 'contain', marginBottom: 4 },
   signatureSpacer: { height: 44 },
@@ -79,9 +81,10 @@ export function CertificateDocument({
   const src = (url?: string | null) => imageSrc(url, { server });
   const sponsors = (config.sponsors || []).filter((s) => s.logo);
   const signatures = (config.signatures || []).slice(0, 4);
+  // The participant always gets a blank line to sign, at the right of the org signatures.
   const slots = [
     ...signatures.map((s) => ({ name: s.name, role: s.role ?? null, image: s.image ?? null })),
-    ...(config.participant_signature ? [{ name: certificate.name, role: 'Participante', image: null }] : []),
+    { name: certificate.name, role: 'Participante', image: null },
   ];
   const compact = slots.length > 4;
 
@@ -121,7 +124,7 @@ export function CertificateDocument({
           ) : null}
 
           {slots.length > 0 ? (
-            <View style={styles.signaturesRow}>
+            <View style={compact ? styles.signaturesRowCompact : styles.signaturesRow}>
               {slots.map((slot, i) => (
                 <View key={`${slot.name}-${i}`} style={compact ? styles.signatureCompact : styles.signature}>
                   {slot.image ? (
