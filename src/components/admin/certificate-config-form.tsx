@@ -40,7 +40,9 @@ const CertificatePreview = dynamic(() => import('@/components/certificate/certif
   loading: () => <Skeleton className="w-full h-[420px]" />,
 });
 
-const MANAGER_URL = process.env.NEXT_PUBLIC_MANAGER_URL || 'https://manager.hubcommunity.io';
+// Certificate media goes through the BFF's upload proxy (same origin as the GraphQL
+// endpoint) so the frontend never talks to Strapi directly.
+const BFF_UPLOAD_URL = (process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:4000/graphql').replace(/\/graphql\/?$/, '/upload');
 
 const mediaSchema = z.object({ id: z.string().nullable(), url: z.string().nullable() });
 type MediaField = z.infer<typeof mediaSchema>;
@@ -142,12 +144,13 @@ function errorMessage(err: unknown): string {
 
 async function uploadImage(file: File): Promise<MediaField> {
   const data = new FormData();
-  data.append('files', file);
-  const res = await fetch('/api/upload', { method: 'POST', body: data });
+  data.append('file', file);
+  const res = await fetch(BFF_UPLOAD_URL, { method: 'POST', body: data });
   if (!res.ok) throw new Error('Falha no upload da imagem.');
-  const [uploaded] = await res.json();
-  const url: string = uploaded.url.startsWith('http') ? uploaded.url : `${MANAGER_URL}${uploaded.url}`;
-  return { id: String(uploaded.id), url };
+  // The BFF returns { id, url (absolute), name }.
+  const uploaded: { id: number | string; url: string } = await res.json();
+  if (!uploaded?.id || !uploaded?.url) throw new Error('Falha no upload da imagem.');
+  return { id: String(uploaded.id), url: uploaded.url };
 }
 
 // Small reusable image picker: shows the current image, uploads on change, clears on X.
