@@ -23,6 +23,14 @@ const SOURCE_LABEL: Record<CandidateSource, string> = { SIGNUP: 'Inscrito', ATTE
 type StatusFilter = 'all' | 'pending' | 'issued' | 'sent';
 const ZIP_BATCH = 500;
 
+// Same pattern as src/app/certificado/page.tsx: prefer the BFF's GraphQL error, fall back to a
+// generic pt-BR message for network errors.
+function errorMessage(err: unknown): string {
+  const graphQLErrors = (err as { graphQLErrors?: { message: string }[] } | undefined)?.graphQLErrors;
+  if (graphQLErrors?.length) return graphQLErrors[0].message;
+  return 'Não foi possível conectar. Tente novamente.';
+}
+
 interface RowEdit { name?: string; identifier?: string }
 interface IssueOptions { register: boolean; email: boolean; zip: boolean }
 
@@ -167,7 +175,9 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
       setSelected(new Set());
       setEdits((prev) => {
         const next = { ...prev };
-        targets.forEach((c) => delete next[c.key]);
+        // Keep edits for rows that came back with a matched error so a retry doesn't lose
+        // the user's corrections (e.g. a fixed CPF that still failed for another reason).
+        targets.filter((c) => !matched[c.key]).forEach((c) => delete next[c.key]);
         return next;
       });
       await refetch();
@@ -220,7 +230,7 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
   };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
-  if (error) return <div className="text-red-500 bg-red-500/10 p-4 rounded-lg">{error.message}</div>;
+  if (error) return <div className="text-red-500 bg-red-500/10 p-4 rounded-lg">{errorMessage(error)}</div>;
 
   const selectedCount = selected.size;
 
@@ -322,7 +332,7 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
                         ) : c.certificate ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => runIssue([c], { register: true, email: true, zip: false })} aria-label="Reenviar e-mail" disabled={issuing}>
+                              <Button variant="ghost" size="icon" onClick={() => runIssue([c], { register: true, email: true, zip: false })} aria-label="Reenviar e-mail" disabled={issuing || !c.email}>
                                 <Mail className="w-4 h-4" />
                               </Button>
                             </TooltipTrigger>

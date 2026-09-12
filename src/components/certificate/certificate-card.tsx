@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDate } from '@/lib/certificate';
-import type { Certificate, CertificateConfig } from '@/lib/types';
+import type { CertificateConfig, PublicCertificate } from '@/lib/types';
 
 const CertificatePreview = dynamic(() => import('@/components/certificate/certificate-preview'), {
   ssr: false,
@@ -15,7 +15,7 @@ const CertificatePreview = dynamic(() => import('@/components/certificate/certif
 });
 
 interface CertificateCardProps {
-  certificate: Certificate;
+  certificate: PublicCertificate;
   config?: CertificateConfig | null;
   showPreview?: boolean;
 }

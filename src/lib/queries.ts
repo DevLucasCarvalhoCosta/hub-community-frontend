@@ -901,6 +901,36 @@ export const CERTIFICATE_FIELDS = gql`
   }
 `;
 
+// Subset of CERTIFICATE_FIELDS without `identifier`/`email`: used by public pages
+// (GET_CERTIFICATE_BY_CODE) that must never fetch CPF/e-mail.
+export const CERTIFICATE_PUBLIC_FIELDS = gql`
+  fragment CertificatePublicFields on Certificate {
+    id
+    code
+    name
+    source
+    issued_at
+    sent_at
+    revoked_at
+    event {
+      id
+      documentId
+      slug
+      title
+      start_date
+      end_date
+      is_online
+      location {
+        title
+        city
+      }
+      communities {
+        title
+      }
+    }
+  }
+`;
+
 export const CERTIFICATE_CONFIG_FIELDS = gql`
   fragment CertificateConfigFields on CertificateConfig {
     id
@@ -942,10 +972,10 @@ export const GET_CERTIFICATE_CONFIG = gql`
 `;
 
 export const GET_CERTIFICATE_BY_CODE = gql`
-  ${CERTIFICATE_FIELDS}
+  ${CERTIFICATE_PUBLIC_FIELDS}
   query GetCertificateByCode($code: String!) {
     certificateByCode(code: $code) {
-      ...CertificateFields
+      ...CertificatePublicFields
     }
   }
 `;

@@ -20,8 +20,6 @@ interface CertificatePreviewProps {
   config: CertificateConfigLike;
   event: CertificateEventInfo;
   certificate: { code: string; name: string };
-  /** Kept for backwards compatibility; the layout is now driven by width (A4 landscape aspect). */
-  height?: number;
 }
 
 interface RenderInput {

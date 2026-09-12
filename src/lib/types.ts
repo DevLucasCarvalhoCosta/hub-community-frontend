@@ -709,8 +709,11 @@ export interface LookupResult {
   revoked: boolean;
 }
 
+/** Certificate shape returned to public pages: never carries CPF/e-mail (see CERTIFICATE_PUBLIC_FIELDS). */
+export type PublicCertificate = Omit<Certificate, 'identifier' | 'email'>;
+
 export interface CertificateConfigResponse { certificateConfig: CertificateConfig | null }
-export interface CertificateByCodeResponse { certificateByCode: Certificate | null }
+export interface CertificateByCodeResponse { certificateByCode?: PublicCertificate | null }
 export interface LookupCertificateResponse { lookupCertificate: LookupResult }
 export interface UpsertCertificateConfigResponse { upsertCertificateConfig: CertificateConfig }
 export interface CopyCertificateConfigResponse { copyCertificateConfig: CertificateConfig }

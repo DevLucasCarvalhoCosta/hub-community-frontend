@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import { fetchCertificateBundle, renderCertificatePdf, type CertificateBundle } from '@/lib/certificate-server';
 import { certificateFileName } from '@/lib/certificate';
+import type { CertificateConfig } from '@/lib/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,13 +43,16 @@ export async function POST(request: NextRequest) {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
   const zip = new JSZip();
   const usedNames = new Set<string>();
+  // Memoises certificateConfig per eventId for the lifetime of this request, so a batch of
+  // codes for the same event only fetches the config once.
+  const configCache = new Map<string, Promise<CertificateConfig | null>>();
 
   for (let i = 0; i < uniqueCodes.length; i += CONCURRENCY) {
     const chunk = uniqueCodes.slice(i, i + CONCURRENCY);
     const results: ChunkResult[] = await Promise.all(
       chunk.map(async (code): Promise<ChunkResult> => {
         try {
-          const bundle = await fetchCertificateBundle(code);
+          const bundle = await fetchCertificateBundle(code, configCache);
           if (!bundle) return { code, bundle: null, pdf: null, error: null }; // revoked or unknown: skip
           const pdf = await renderCertificatePdf(bundle, baseUrl);
           return { code, bundle, pdf, error: null };

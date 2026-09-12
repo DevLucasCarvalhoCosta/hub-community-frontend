@@ -478,7 +478,7 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
                 <ImageField label="Logo" value={field.value} onChange={field.onChange} hint="PNG com fundo transparente, até 200×60." />
               )} />
               <FormField control={form.control} name="background" render={({ field }) => (
-                <ImageField label="Fundo (opcional)" value={field.value} onChange={field.onChange} hint="A4 paisagem (ex. 2480×1754). Sem fundo, o certificado usa branco." />
+                <ImageField label="Fundo (opcional)" value={field.value} onChange={field.onChange} hint="A4 paisagem (ex. 2480×1754). Sem fundo, o certificado usa fundo branco com moldura dupla na cor principal." />
               )} />
             </CardContent>
           </Card>
@@ -608,7 +608,7 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
 
       <div className="xl:sticky xl:top-24 self-start space-y-2">
         <p className="text-sm text-muted-foreground">Pré-visualização (dados fictícios)</p>
-        <CertificatePreview config={previewConfig} event={event} certificate={{ code: 'RCT-EXEMPLO1', name: 'Nome do Participante' }} height={420} />
+        <CertificatePreview config={previewConfig} event={event} certificate={{ code: 'RCT-EXEMPLO1', name: 'Nome do Participante' }} />
       </div>
     </div>
   );

@@ -60,7 +60,7 @@ export default function CertificadosAdminPage() {
             <TabsTrigger value="modelo">Modelo</TabsTrigger>
             <TabsTrigger value="emissao">Emissão</TabsTrigger>
           </TabsList>
-          <TabsContent value="modelo">
+          <TabsContent value="modelo" forceMount className="data-[state=inactive]:hidden">
             <CertificateConfigForm
               eventId={eventId}
               event={event}
@@ -71,7 +71,7 @@ export default function CertificadosAdminPage() {
               }}
             />
           </TabsContent>
-          <TabsContent value="emissao">
+          <TabsContent value="emissao" forceMount className="data-[state=inactive]:hidden">
             <CertificateIssueTable eventId={eventId} eventSlug={event.slug || eventId} />
           </TabsContent>
         </Tabs>

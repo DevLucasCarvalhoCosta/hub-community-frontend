@@ -140,34 +140,32 @@ export function CertificateDocument({
             </View>
           ) : null}
 
-          {slots.length > 0 ? (
-            <View style={compact ? styles.signaturesRowCompact : styles.signaturesRow}>
-              {slots.map((slot, i) => (
-                <View key={`${slot.name}-${i}`} style={compact ? styles.signatureCompact : styles.signature}>
-                  {slot.image ? (
-                    <Image src={src(slot.image)!} style={styles.signatureImage} />
-                  ) : slot.text ? (
-                    <View style={styles.signatureText}>
-                      <Text
-                        style={[
-                          styles.signatureTextValue,
-                          { fontFamily: slot.fontFamily, fontSize: cursiveFontSize(slot.text, compact) },
-                        ]}
-                        hyphenationCallback={keepWordWhole}
-                      >
-                        {slot.text}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.signatureSpacer} />
-                  )}
-                  <View style={compact ? styles.signatureLineCompact : styles.signatureLine} />
-                  <Text style={styles.signatureName}>{slot.name}</Text>
-                  {slot.role ? <Text style={styles.signatureRole}>{slot.role}</Text> : null}
-                </View>
-              ))}
-            </View>
-          ) : null}
+          <View style={compact ? styles.signaturesRowCompact : styles.signaturesRow}>
+            {slots.map((slot, i) => (
+              <View key={`${slot.name}-${i}`} style={compact ? styles.signatureCompact : styles.signature}>
+                {slot.image ? (
+                  <Image src={src(slot.image)!} style={styles.signatureImage} />
+                ) : slot.text ? (
+                  <View style={styles.signatureText}>
+                    <Text
+                      style={[
+                        styles.signatureTextValue,
+                        { fontFamily: slot.fontFamily, fontSize: cursiveFontSize(slot.text, compact) },
+                      ]}
+                      hyphenationCallback={keepWordWhole}
+                    >
+                      {slot.text}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.signatureSpacer} />
+                )}
+                <View style={compact ? styles.signatureLineCompact : styles.signatureLine} />
+                <Text style={styles.signatureName}>{slot.name}</Text>
+                {slot.role ? <Text style={styles.signatureRole}>{slot.role}</Text> : null}
+              </View>
+            ))}
+          </View>
 
           <View style={styles.footer}>
             <View>

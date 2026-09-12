@@ -7,11 +7,11 @@ import { generateQrDataUrl } from '@/lib/certificate-qr';
 import { verifyUrl } from '@/lib/certificate';
 import { GET_CERTIFICATE_BY_CODE, GET_CERTIFICATE_CONFIG } from '@/lib/queries';
 import type {
-  Certificate,
   CertificateByCodeResponse,
   CertificateConfig,
   CertificateConfigResponse,
   CertificateEvent,
+  PublicCertificate,
 } from '@/lib/types';
 
 const GRAPHQL_URL =
@@ -42,7 +42,7 @@ export async function graphqlRequest<T>(
 }
 
 export interface CertificateBundle {
-  certificate: Certificate;
+  certificate: PublicCertificate;
   config: CertificateConfig;
   event: CertificateEvent;
 }
@@ -54,12 +54,28 @@ const EMPTY_CONFIG: CertificateConfig = {
   signatures: [],
 };
 
-export async function fetchCertificateBundle(code: string): Promise<CertificateBundle | null> {
+/**
+ * `cache` lets callers that fetch several certificates in one request (the ZIP route) memoise
+ * `certificateConfig` per `eventId`, so a batch of codes for the same event only fetches the
+ * config once. Pass nothing for a single-certificate fetch (the PDF route).
+ */
+export async function fetchCertificateBundle(
+  code: string,
+  cache?: Map<string, Promise<CertificateConfig | null>>,
+): Promise<CertificateBundle | null> {
   const { certificateByCode } = await graphqlRequest<CertificateByCodeResponse>(GET_CERTIFICATE_BY_CODE, { code });
   if (!certificateByCode || certificateByCode.revoked_at || !certificateByCode.event) return null;
 
   const eventId = certificateByCode.event.documentId || certificateByCode.event.id;
-  const { certificateConfig } = await graphqlRequest<CertificateConfigResponse>(GET_CERTIFICATE_CONFIG, { eventId });
+  const fetchConfig = () =>
+    graphqlRequest<CertificateConfigResponse>(GET_CERTIFICATE_CONFIG, { eventId }).then((r) => r.certificateConfig);
+
+  let configPromise = cache?.get(eventId);
+  if (!configPromise) {
+    configPromise = fetchConfig();
+    cache?.set(eventId, configPromise);
+  }
+  const certificateConfig = await configPromise;
 
   return {
     certificate: certificateByCode,
