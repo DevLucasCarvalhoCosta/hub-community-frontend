@@ -1,6 +1,6 @@
 import React from 'react';
 import { print, type DocumentNode } from 'graphql';
-import { renderToBuffer } from '@react-pdf/renderer';
+import { renderToBuffer, type DocumentProps } from '@react-pdf/renderer';
 import { CertificateDocument } from '@/components/certificate/certificate-document';
 import { generateQrDataUrl } from '@/lib/certificate-qr';
 import { verifyUrl } from '@/lib/certificate';
@@ -30,6 +30,9 @@ export async function graphqlRequest<T>(
     body: JSON.stringify({ query: print(document), variables }),
     cache: 'no-store',
   });
+  if (!res.ok) {
+    throw new Error(`Erro ao consultar o BFF (HTTP ${res.status})`);
+  }
   const json = await res.json();
   if (json.errors?.length) {
     throw new Error(json.errors[0].message || 'Erro no BFF');
@@ -75,5 +78,5 @@ export async function renderCertificatePdf(bundle: CertificateBundle, baseUrl: s
     qrDataUrl,
     server: true,
   });
-  return renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
+  return renderToBuffer(element as React.ReactElement<DocumentProps>);
 }
