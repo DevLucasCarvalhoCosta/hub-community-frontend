@@ -24,10 +24,10 @@ dev-front-build:
 	docker compose -f docker-compose.hub.yml build hub-frontend
 
 dev-front-prod:
-	FRONTEND_BFF_URL=https://bff.hubcommunity.io/graphql docker compose -f docker-compose.hub.yml up -d --no-deps --force-recreate hub-frontend
+	FRONTEND_BFF_URL=https://bff.hubcommunity.io/graphql docker compose -f docker-compose.hub.yml up -d -V --no-deps --force-recreate hub-frontend
 
 dev-front-local:
-	docker compose -f docker-compose.hub.yml up -d --no-deps --force-recreate hub-frontend
+	docker compose -f docker-compose.hub.yml up -d -V --no-deps --force-recreate hub-frontend
 
 dev-logs:
 	docker compose -f docker-compose.hub.yml logs -f hub-backend eventando-backend hub-bff
