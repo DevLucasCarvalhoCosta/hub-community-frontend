@@ -35,7 +35,8 @@ const styles = StyleSheet.create({
   },
   content: { flex: 1, flexDirection: 'column', justifyContent: 'space-between', padding: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 60 },
-  logo: { maxHeight: 60, maxWidth: 200, objectFit: 'contain' },
+  // react-pdf only honours max* on images when a box is given; fix the box and fit inside it.
+  logo: { width: 200, height: 60, objectFit: 'contain', objectPosition: 'left' },
   issuer: { fontSize: 12, color: '#475569' },
   main: { alignItems: 'center', paddingHorizontal: 40 },
   title: { fontSize: 30, fontFamily: 'Helvetica-Bold', marginBottom: 18, textAlign: 'center' },
