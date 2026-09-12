@@ -184,8 +184,11 @@ export default function CertificatePreview({ config, event, certificate }: Certi
   return (
     <div
       ref={wrapperRef}
-      className="relative w-full aspect-[297/210] overflow-hidden rounded-lg border bg-white"
-      style={width > 0 ? { height: Math.round((width * 210) / 297) } : undefined}
+      className="relative w-full overflow-hidden rounded-lg border bg-white"
+      // Before the first frame there is no canvas bitmap to size the box; reserve the A4
+      // landscape height so the skeleton has the right shape. Afterwards the wrapper is
+      // exactly as tall as the canvas (its only in-flow child).
+      style={!hasFrame && width > 0 ? { minHeight: Math.round((width * 210) / 297) } : undefined}
       aria-busy={updating}
     >
       <canvas
