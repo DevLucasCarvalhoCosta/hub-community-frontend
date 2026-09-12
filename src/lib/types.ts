@@ -714,6 +714,8 @@ export interface RequestCertificateResponse { requestCertificate: Certificate }
 
 export type CandidateSource = 'SIGNUP' | 'ATTENDANCE' | 'REQUEST';
 
+export type CandidateCertificate = Pick<Certificate, 'id' | 'code' | 'name' | 'source' | 'issued_at' | 'sent_at'>;
+
 export interface CertificateCandidate {
   key: string;
   name: string;
@@ -722,7 +724,7 @@ export interface CertificateCandidate {
   phone?: string | null;
   sources: CandidateSource[];
   checked_in?: boolean | null;
-  certificate?: Certificate | null;
+  certificate?: CandidateCertificate | null;
 }
 
 export interface CertificateCandidatesResponse { certificateCandidates: CertificateCandidate[] }
@@ -730,10 +732,12 @@ export interface CertificateCandidatesResponse { certificateCandidates: Certific
 export interface IssueEntryInput { name: string; identifier: string; email: string }
 export interface IssueActionsInput { register: boolean; email: boolean }
 
+export type IssuedCertificate = Pick<Certificate, 'code' | 'identifier' | 'sent_at'>;
+
 export interface IssueResult {
   issued: number;
   emailed: number;
-  certificates: Certificate[];
+  certificates: IssuedCertificate[];
   errors: string[];
 }
 
