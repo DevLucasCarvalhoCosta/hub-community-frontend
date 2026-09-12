@@ -38,6 +38,7 @@ export interface CertificateConfigLike {
   background?: string | null;
   sponsors?: { name: string; logo?: string | null; url?: string | null }[];
   signatures?: { name: string; role?: string | null; image?: string | null }[];
+  participant_signature?: boolean | null;
 }
 
 export function defaultBodyTemplate(hasLocation: boolean): string {

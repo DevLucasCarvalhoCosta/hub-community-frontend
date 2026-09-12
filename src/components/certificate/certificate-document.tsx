@@ -33,6 +33,9 @@ const styles = StyleSheet.create({
     width: 841.89,
     height: 595.28,
   },
+  // Default double-line frame, drawn only when there is no background image.
+  frameOuter: { position: 'absolute', top: 18, left: 18, right: 18, bottom: 18, borderWidth: 3 },
+  frameInner: { position: 'absolute', top: 26, left: 26, right: 26, bottom: 26, borderWidth: 1 },
   content: { flex: 1, flexDirection: 'column', justifyContent: 'space-between', padding: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 60 },
   // react-pdf only honours max* on images when a box is given; fix the box and fit inside it.
@@ -48,9 +51,12 @@ const styles = StyleSheet.create({
   sponsorLogo: { height: 32, maxWidth: 90, objectFit: 'contain' },
   signaturesRow: { flexDirection: 'row', justifyContent: 'center', gap: 32, marginTop: 10 },
   signature: { width: 150, alignItems: 'center' },
+  // 5 slots (4 org + participant) only fit the 761pt content width with narrower boxes.
+  signatureCompact: { width: 130, alignItems: 'center' },
   signatureImage: { height: 40, maxWidth: 140, objectFit: 'contain', marginBottom: 4 },
   signatureSpacer: { height: 44 },
   signatureLine: { width: 140, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
+  signatureLineCompact: { width: 120, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
   signatureName: { fontSize: 10, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
   signatureRole: { fontSize: 9, color: '#64748b', textAlign: 'center' },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
@@ -73,11 +79,23 @@ export function CertificateDocument({
   const src = (url?: string | null) => imageSrc(url, { server });
   const sponsors = (config.sponsors || []).filter((s) => s.logo);
   const signatures = (config.signatures || []).slice(0, 4);
+  const slots = [
+    ...signatures.map((s) => ({ name: s.name, role: s.role ?? null, image: s.image ?? null })),
+    ...(config.participant_signature ? [{ name: certificate.name, role: 'Participante', image: null }] : []),
+  ];
+  const compact = slots.length > 4;
 
   return (
     <Document title={`${title} - ${certificate.name}`} author={config.issuer_name || 'Hub Community'}>
       <Page size="A4" orientation="landscape" wrap={false} style={styles.page}>
-        {config.background ? <Image src={src(config.background)!} style={styles.background} /> : null}
+        {config.background ? (
+          <Image src={src(config.background)!} style={styles.background} />
+        ) : (
+          <>
+            <View style={[styles.frameOuter, { borderColor: primary }]} />
+            <View style={[styles.frameInner, { borderColor: primary }]} />
+          </>
+        )}
 
         <View style={styles.content}>
           <View style={styles.header}>
@@ -102,18 +120,18 @@ export function CertificateDocument({
             </View>
           ) : null}
 
-          {signatures.length > 0 ? (
+          {slots.length > 0 ? (
             <View style={styles.signaturesRow}>
-              {signatures.map((s, i) => (
-                <View key={`${s.name}-${i}`} style={styles.signature}>
-                  {s.image ? (
-                    <Image src={src(s.image)!} style={styles.signatureImage} />
+              {slots.map((slot, i) => (
+                <View key={`${slot.name}-${i}`} style={compact ? styles.signatureCompact : styles.signature}>
+                  {slot.image ? (
+                    <Image src={src(slot.image)!} style={styles.signatureImage} />
                   ) : (
                     <View style={styles.signatureSpacer} />
                   )}
-                  <View style={styles.signatureLine} />
-                  <Text style={styles.signatureName}>{s.name}</Text>
-                  {s.role ? <Text style={styles.signatureRole}>{s.role}</Text> : null}
+                  <View style={compact ? styles.signatureLineCompact : styles.signatureLine} />
+                  <Text style={styles.signatureName}>{slot.name}</Text>
+                  {slot.role ? <Text style={styles.signatureRole}>{slot.role}</Text> : null}
                 </View>
               ))}
             </View>
