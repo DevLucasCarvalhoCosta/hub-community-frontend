@@ -1,0 +1,79 @@
+import React from 'react';
+import { print, type DocumentNode } from 'graphql';
+import { renderToBuffer } from '@react-pdf/renderer';
+import { CertificateDocument } from '@/components/certificate/certificate-document';
+import { generateQrDataUrl } from '@/lib/certificate-qr';
+import { verifyUrl } from '@/lib/certificate';
+import { GET_CERTIFICATE_BY_CODE, GET_CERTIFICATE_CONFIG } from '@/lib/queries';
+import type {
+  Certificate,
+  CertificateByCodeResponse,
+  CertificateConfig,
+  CertificateConfigResponse,
+  CertificateEvent,
+} from '@/lib/types';
+
+const GRAPHQL_URL =
+  process.env.GRAPHQL_URL || process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:4000/graphql';
+
+export async function graphqlRequest<T>(
+  document: DocumentNode,
+  variables: Record<string, unknown>,
+  authorization?: string,
+): Promise<T> {
+  const res = await fetch(GRAPHQL_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authorization ? { authorization } : {}),
+    },
+    body: JSON.stringify({ query: print(document), variables }),
+    cache: 'no-store',
+  });
+  const json = await res.json();
+  if (json.errors?.length) {
+    throw new Error(json.errors[0].message || 'Erro no BFF');
+  }
+  return json.data as T;
+}
+
+export interface CertificateBundle {
+  certificate: Certificate;
+  config: CertificateConfig;
+  event: CertificateEvent;
+}
+
+const EMPTY_CONFIG: CertificateConfig = {
+  enabled: false,
+  allow_self_request: true,
+  sponsors: [],
+  signatures: [],
+};
+
+export async function fetchCertificateBundle(code: string): Promise<CertificateBundle | null> {
+  const { certificateByCode } = await graphqlRequest<CertificateByCodeResponse>(GET_CERTIFICATE_BY_CODE, { code });
+  if (!certificateByCode || certificateByCode.revoked_at || !certificateByCode.event) return null;
+
+  const eventId = certificateByCode.event.documentId || certificateByCode.event.id;
+  const { certificateConfig } = await graphqlRequest<CertificateConfigResponse>(GET_CERTIFICATE_CONFIG, { eventId });
+
+  return {
+    certificate: certificateByCode,
+    config: certificateConfig || EMPTY_CONFIG,
+    event: certificateByCode.event,
+  };
+}
+
+export async function renderCertificatePdf(bundle: CertificateBundle, baseUrl: string): Promise<Buffer> {
+  const url = verifyUrl(bundle.certificate.code, baseUrl);
+  const qrDataUrl = await generateQrDataUrl(url);
+  const element = React.createElement(CertificateDocument, {
+    config: bundle.config,
+    event: bundle.event,
+    certificate: { code: bundle.certificate.code, name: bundle.certificate.name },
+    verifyUrl: url,
+    qrDataUrl,
+    server: true,
+  });
+  return renderToBuffer(element as Parameters<typeof renderToBuffer>[0]);
+}
