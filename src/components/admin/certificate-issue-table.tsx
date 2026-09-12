@@ -17,7 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { formatCpf, formatDate, isValidCpf, normalizeIdentifier } from '@/lib/certificate';
 import { GET_CERTIFICATE_CANDIDATES, ISSUE_CERTIFICATES } from '@/lib/queries';
-import type { CandidateSource, CertificateCandidate, CertificateCandidatesResponse, IssueCertificatesResponse } from '@/lib/types';
+import type { CandidateSource, CertificateCandidate, CertificateCandidatesResponse, IssueCertificatesResponse, IssueEntryInput } from '@/lib/types';
 
 const SOURCE_LABEL: Record<CandidateSource, string> = { SIGNUP: 'Inscrito', ATTENDANCE: 'Presença', REQUEST: 'Solicitação' };
 type StatusFilter = 'all' | 'pending' | 'issued' | 'sent';
@@ -33,6 +33,9 @@ function errorMessage(err: unknown): string {
 
 interface RowEdit { name?: string; identifier?: string }
 interface IssueOptions { register: boolean; email: boolean; zip: boolean }
+
+// Same rule the BFF applies before falling back to the e-mail as identifier.
+const hasValidEmail = (email?: string | null) => (email || '').trim().includes('@');
 
 interface Props {
   eventId: string;
@@ -63,12 +66,13 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
   const effective = (c: CertificateCandidate) => ({
     name: edits[c.key]?.name ?? c.name,
     identifier: normalizeIdentifier(edits[c.key]?.identifier ?? c.identifier ?? ''),
+    email: (c.email || '').trim(),
   });
 
   // Mirrors the BFF's `(entry.name || '').trim() || entry.email || cpf` label used to prefix
   // each error string (see hub-community-bff Certificate resolver, issueCertificates loop).
-  const labelFor = (entry: { name: string; identifier: string; email: string }) =>
-    (entry.name || '').trim() || entry.email || entry.identifier;
+  const labelFor = (entry: { name: string; identifier?: string; email: string }) =>
+    (entry.name || '').trim() || entry.email || entry.identifier || '';
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -83,7 +87,12 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
     });
   }, [candidates, search, sourceFilter, statusFilter, edits]);
 
-  const canIssue = (c: CertificateCandidate) => isValidCpf(effective(c).identifier) && Boolean(c.email);
+  // A CPF is optional (the BFF keys the certificate by e-mail when there is none), but whatever
+  // was typed in the CPF field must be a valid CPF.
+  const canIssue = (c: CertificateCandidate) => {
+    const eff = effective(c);
+    return hasValidEmail(eff.email) && (isValidCpf(eff.identifier) || !eff.identifier);
+  };
   const selectable = filtered.filter((c) => canIssue(c) || c.certificate);
   const allFilteredSelected = selectable.length > 0 && selectable.every((c) => selected.has(c.key));
 
@@ -131,7 +140,10 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
   };
 
   const runIssue = async (targets: CertificateCandidate[], opts: IssueOptions, extraZipTargets: CertificateCandidate[] = []) => {
-    const entries = targets.map((c) => ({ ...effective(c), email: (c.email || '').trim() }));
+    const entries: IssueEntryInput[] = targets.map((c) => {
+      const { name, identifier: cpf, email } = effective(c);
+      return { name, identifier: isValidCpf(cpf) ? normalizeIdentifier(cpf) : undefined, email };
+    });
     try {
       const { data: res } = await issue({ variables: { eventId, entries, actions: { register: opts.register, email: opts.email } } });
       const result = res?.issueCertificates;
@@ -305,8 +317,9 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         {editable ? (
-                          <Input value={formatCpf(eff.identifier)} placeholder="CPF obrigatório" className={`h-8 w-36 ${cpfInvalid ? 'border-destructive' : ''}`} onChange={(e) => setEdit(c.key, { identifier: e.target.value })} />
+                          <Input value={formatCpf(eff.identifier)} placeholder="CPF (opcional)" className={`h-8 w-36 ${cpfInvalid ? 'border-destructive' : ''}`} onChange={(e) => setEdit(c.key, { identifier: e.target.value })} />
                         ) : formatCpf(eff.identifier)}
+                        {!eff.identifier ? <div className="text-xs text-muted-foreground">Sem CPF: emitido pelo e-mail</div> : null}
                       </TableCell>
                       <TableCell>{c.email || <span className="text-destructive text-xs">sem e-mail</span>}</TableCell>
                       <TableCell className="space-x-1 whitespace-nowrap">

@@ -115,6 +115,10 @@ describe('cpf helpers', () => {
     expect(formatCpf('52998224725')).toBe('529.982.247-25');
     expect(formatCpf('529')).toBe('529');
   });
+  it('formatCpf leaves an e-mail identifier untouched', () => {
+    expect(formatCpf('ana.silva@example.com')).toBe('ana.silva@example.com');
+    expect(formatCpf('')).toBe('');
+  });
 });
 
 describe('imageSrc / verifyUrl', () => {

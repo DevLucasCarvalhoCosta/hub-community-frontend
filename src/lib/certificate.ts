@@ -145,7 +145,9 @@ export function isValidCpf(cpf: string): boolean {
   return check(digits.slice(0, 9), 10) === Number(digits[9]) && check(digits.slice(0, 10), 11) === Number(digits[10]);
 }
 
+// Certificates issued without a CPF carry the e-mail as identifier: shown as is.
 export function formatCpf(digits: string): string {
+  if ((digits || '').includes('@')) return digits;
   const d = normalizeIdentifier(digits);
   if (d.length !== 11) return d;
   return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');

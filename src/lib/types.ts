@@ -736,7 +736,8 @@ export interface CertificateCandidate {
 
 export interface CertificateCandidatesResponse { certificateCandidates: CertificateCandidate[] }
 
-export interface IssueEntryInput { name: string; identifier: string; email: string }
+/** `identifier` (CPF) is optional: without a valid CPF the BFF keys the certificate by the e-mail. */
+export interface IssueEntryInput { name: string; identifier?: string; email: string }
 export interface IssueActionsInput { register: boolean; email: boolean }
 
 export type IssuedCertificate = Pick<Certificate, 'code' | 'identifier' | 'sent_at'>;
