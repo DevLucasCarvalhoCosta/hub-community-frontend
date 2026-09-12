@@ -692,8 +692,8 @@ export interface Certificate {
   id?: string;
   code: string;
   name: string;
-  identifier: string;
-  email: string;
+  identifier?: string | null; // masked (null) on the public certificateByCode query
+  email?: string | null; // masked (null) on the public certificateByCode query
   source: CertificateSource;
   issued_at?: string | null;
   sent_at?: string | null;

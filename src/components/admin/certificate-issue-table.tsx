@@ -319,7 +319,7 @@ export function CertificateIssueTable({ eventId, eventSlug }: Props) {
                         {editable ? (
                           <Input value={formatCpf(eff.identifier)} placeholder="CPF (opcional)" className={`h-8 w-36 ${cpfInvalid ? 'border-destructive' : ''}`} onChange={(e) => setEdit(c.key, { identifier: e.target.value })} />
                         ) : formatCpf(eff.identifier)}
-                        {!eff.identifier ? <div className="text-xs text-muted-foreground">Sem CPF: emitido pelo e-mail</div> : null}
+                        {!eff.identifier && eff.email ? <div className="text-xs text-muted-foreground">Sem CPF: emitido pelo e-mail</div> : null}
                       </TableCell>
                       <TableCell>{c.email || <span className="text-destructive text-xs">sem e-mail</span>}</TableCell>
                       <TableCell className="space-x-1 whitespace-nowrap">
