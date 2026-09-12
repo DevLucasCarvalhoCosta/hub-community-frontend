@@ -75,7 +75,7 @@ export default function CertificatePreview({ config, event, certificate }: Certi
     const el = wrapperRef.current;
     if (!el) return;
     const update = () => {
-      const next = Math.round(el.getBoundingClientRect().width);
+      const next = Math.round(el.clientWidth); // content box (excludes the border)
       setWidth((prev) => (prev === next ? prev : next));
     };
     update();
@@ -150,6 +150,10 @@ export default function CertificatePreview({ config, event, certificate }: Certi
         canvas.width = offscreen.width;
         canvas.height = offscreen.height;
       }
+      // Pin the CSS box to the rasterised aspect so the bitmap is never stretched,
+      // regardless of how the wrapper's height resolves.
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${Math.round(offscreen.height / pixelRatio)}px`;
       ctx.drawImage(offscreen, 0, 0);
 
       setHasFrame(true);
@@ -181,13 +185,14 @@ export default function CertificatePreview({ config, event, certificate }: Certi
     <div
       ref={wrapperRef}
       className="relative w-full aspect-[297/210] overflow-hidden rounded-lg border bg-white"
+      style={width > 0 ? { height: Math.round((width * 210) / 297) } : undefined}
       aria-busy={updating}
     >
       <canvas
         ref={canvasRef}
         aria-label="Pré-visualização do certificado"
         role="img"
-        className={cn('block h-full w-full transition-opacity duration-200', updating && hasFrame && 'opacity-80')}
+        className={cn('block transition-opacity duration-200', updating && hasFrame && 'opacity-80')}
       />
       {showSkeleton ? <Skeleton className="absolute inset-0 rounded-none" /> : null}
       {updating && hasFrame ? (
