@@ -738,6 +738,11 @@ export interface CertificateByCodeResponse { certificateByCode?: PublicCertifica
 export interface LookupCertificateResponse { lookupCertificate: LookupResult }
 export interface UpsertCertificateConfigResponse { upsertCertificateConfig: CertificateConfig }
 export interface CopyCertificateConfigResponse { copyCertificateConfig: CertificateConfig }
+export interface CertificateConfigSummary {
+  event: { id: string; slug?: string | null; title: string; start_date?: string | null };
+  config: CertificateConfig;
+}
+export interface CertificateConfigsResponse { certificateConfigs: CertificateConfigSummary[] }
 export interface RequestCertificateResponse { requestCertificate: Certificate }
 
 export type CandidateSource = 'SIGNUP' | 'ATTENDANCE' | 'REQUEST';

@@ -1051,6 +1051,24 @@ export const UPSERT_CERTIFICATE_CONFIG = gql`
   }
 `;
 
+// Every event that has a certificate model — the source list for copying one.
+export const CERTIFICATE_CONFIGS = gql`
+  ${CERTIFICATE_CONFIG_FIELDS}
+  query CertificateConfigs {
+    certificateConfigs {
+      event {
+        id
+        slug
+        title
+        start_date
+      }
+      config {
+        ...CertificateConfigFields
+      }
+    }
+  }
+`;
+
 export const COPY_CERTIFICATE_CONFIG = gql`
   ${CERTIFICATE_CONFIG_FIELDS}
   mutation CopyCertificateConfig($fromEventId: String!, $toEventId: String!) {

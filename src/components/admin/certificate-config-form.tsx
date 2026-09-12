@@ -4,9 +4,10 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useLazyQuery, useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import * as z from 'zod';
-import { Copy, ImagePlus, Loader2, Plus, Trash2, X } from 'lucide-react';
+import { ImagePlus, Loader2, Plus, Trash2, X } from 'lucide-react';
+import { CopyCertificateModel } from '@/components/admin/copy-certificate-model';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -38,12 +39,10 @@ import {
   type SignatureFont,
 } from '@/lib/certificate-fonts-meta';
 import { cn } from '@/lib/utils';
-import { COPY_CERTIFICATE_CONFIG, GET_EVENT_BY_SLUG_OR_ID, UPSERT_CERTIFICATE_CONFIG } from '@/lib/queries';
+import { UPSERT_CERTIFICATE_CONFIG } from '@/lib/queries';
 import type {
   CertificateConfig,
   CertificateConfigInput,
-  CopyCertificateConfigResponse,
-  EventResponse,
   UpsertCertificateConfigResponse,
 } from '@/lib/types';
 
@@ -324,9 +323,6 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
   }, [initialConfig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [upsert, { loading: saving }] = useMutation<UpsertCertificateConfigResponse>(UPSERT_CERTIFICATE_CONFIG);
-  const [copyConfig, { loading: copying }] = useMutation<CopyCertificateConfigResponse>(COPY_CERTIFICATE_CONFIG);
-  const [findSourceEvent] = useLazyQuery<EventResponse>(GET_EVENT_BY_SLUG_OR_ID);
-  const [copySource, setCopySource] = useState('');
 
   // Per-row Imagem/Texto choice, keyed by the field-array id so it survives reorders/removals.
   // Rows without an explicit choice fall back to what the saved data implies.
@@ -373,22 +369,6 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
     }
   };
 
-  const handleCopy = async () => {
-    if (!copySource.trim()) return;
-    try {
-      const { data } = await findSourceEvent({ variables: { slugOrId: copySource.trim() } });
-      const fromEventId = data?.eventBySlugOrId?.documentId || data?.eventBySlugOrId?.id;
-      if (!fromEventId) throw new Error('Evento de origem não encontrado.');
-      const result = await copyConfig({ variables: { fromEventId, toEventId: eventId } });
-      if (result.data?.copyCertificateConfig) {
-        onSaved(result.data.copyCertificateConfig);
-        toast({ title: 'Modelo copiado', description: `Copiado de "${data?.eventBySlugOrId?.title}". Revise e salve.` });
-      }
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Não foi possível copiar', description: errorMessage(err) });
-    }
-  };
-
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
       <Form {...form}>
@@ -416,16 +396,7 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
                   <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 </FormItem>
               )} />
-              <div className="flex items-end gap-2 pt-2">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="copy-source">Copiar modelo de outro evento</Label>
-                  <Input id="copy-source" placeholder="slug ou ID do evento" value={copySource} onChange={(e) => setCopySource(e.target.value)} />
-                </div>
-                <Button type="button" variant="outline" onClick={handleCopy} disabled={copying || !copySource.trim()}>
-                  {copying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Copy className="w-4 h-4 mr-2" />}
-                  Copiar
-                </Button>
-              </div>
+              <CopyCertificateModel eventId={eventId} event={event} onCopied={onSaved} />
             </CardContent>
           </Card>
 
