@@ -8,7 +8,7 @@ import {
   type CertificateConfigLike,
   type CertificateEventInfo,
 } from '@/lib/certificate';
-import { registerSignatureFonts, signatureFontFamily } from '@/lib/certificate-fonts';
+import { cursiveFontSize, registerSignatureFonts, signatureFontFamily } from '@/lib/certificate-fonts';
 
 export interface CertificateDocumentProps {
   config: CertificateConfigLike;
@@ -59,7 +59,8 @@ const styles = StyleSheet.create({
   signatureImage: { height: 40, maxWidth: 140, objectFit: 'contain', marginBottom: 4 },
   // Typed cursive signature occupies the same box as the image.
   signatureText: { height: 44, marginBottom: 4, justifyContent: 'flex-end', alignItems: 'center' },
-  signatureTextValue: { fontSize: 26, color: '#0f172a', textAlign: 'center', maxLines: 1, textOverflow: 'ellipsis' },
+  // fontSize comes from cursiveFontSize() (scaled to the slot); maxLines is only a last resort.
+  signatureTextValue: { color: '#0f172a', textAlign: 'center', maxLines: 1, textOverflow: 'ellipsis' },
   signatureSpacer: { height: 44 },
   signatureLine: { width: 140, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
   signatureLineCompact: { width: 120, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
@@ -148,7 +149,10 @@ export function CertificateDocument({
                   ) : slot.text ? (
                     <View style={styles.signatureText}>
                       <Text
-                        style={[styles.signatureTextValue, { fontFamily: slot.fontFamily }]}
+                        style={[
+                          styles.signatureTextValue,
+                          { fontFamily: slot.fontFamily, fontSize: cursiveFontSize(slot.text, compact) },
+                        ]}
                         hyphenationCallback={keepWordWhole}
                       >
                         {slot.text}

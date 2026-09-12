@@ -80,6 +80,19 @@ describe('CertificateDocument', () => {
     expect(pdf).toMatch(/DancingScript/);
   });
 
+  it('renders a long typed name on one line (stepped-down size)', async () => {
+    const buffer = await render({
+      signatures: [
+        { name: 'Maria', role: 'Org', text: 'Maria Clara de Souza Andrade', font: 'great_vibes' },
+        { name: 'B', text: 'Bia Lima Ferreira', font: 'allura' },
+        { name: 'C', text: 'Caio', font: 'dancing_script' },
+        { name: 'D', text: 'Daniela Rocha Nunes Vieira', font: 'allura' },
+      ],
+    });
+    expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+    expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
+  });
+
   it('prefers the image over typed text and falls back to the default font', async () => {
     const buffer = await render({
       signatures: [

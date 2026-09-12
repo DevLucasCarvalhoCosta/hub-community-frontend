@@ -32,6 +32,8 @@ import {
   DEFAULT_SIGNATURE_FONT,
   SIGNATURE_FONTS,
   SIGNATURE_FONT_KEYS,
+  SIGNATURE_SLOT_WIDTH,
+  cursiveFontSize,
   isSignatureFont,
   type SignatureFont,
 } from '@/lib/certificate-fonts-meta';
@@ -90,7 +92,7 @@ const formSchema = z.object({
         name: z.string().min(1, 'Nome obrigatório'),
         role: z.string().optional(),
         image: mediaSchema,
-        text: z.string().max(60, 'Máximo de 60 caracteres').optional(),
+        text: z.string().max(40, 'Máximo de 40 caracteres').optional(),
         font: z.enum(SIGNATURE_FONT_KEYS).default(DEFAULT_SIGNATURE_FONT),
       }),
     )
@@ -262,6 +264,13 @@ function ImageField({ value, onChange, label, hint }: { value: MediaField; onCha
   );
 }
 
+// The sample box is 200px wide for the 150pt PDF slot, so the PDF size scales by 200/150
+// (26pt → 35px, 21pt → 28px, 17pt → 23px) and the admin sees roughly what the PDF shows.
+const SAMPLE_BOX_PX = 200;
+function sampleFontSizePx(text: string): number {
+  return Math.round(cursiveFontSize(text) * (SAMPLE_BOX_PX / SIGNATURE_SLOT_WIDTH));
+}
+
 // Text-mode fields for one signature row plus a live sample in the chosen cursive font.
 function SignatureTextFields({
   text,
@@ -283,15 +292,16 @@ function SignatureTextFields({
       </div>
       <div
         className={cn(
-          'flex h-16 items-center justify-center rounded border bg-white px-3 text-3xl leading-none text-slate-900 overflow-hidden whitespace-nowrap',
+          'flex h-16 w-full max-w-[200px] items-center justify-center rounded border bg-white px-2 leading-none text-slate-900 overflow-hidden whitespace-nowrap',
           SIGNATURE_FONT_CLASS[font],
           !sample && 'text-slate-400',
         )}
+        style={{ fontSize: sampleFontSizePx(sample || 'Sua assinatura') }}
         aria-label="Amostra da assinatura"
       >
         {sample || 'Sua assinatura'}
       </div>
-      <p className="text-xs text-muted-foreground">Prévia da assinatura em texto. Use um nome curto: o certificado mostra uma linha só.</p>
+      <p className="text-xs text-muted-foreground">Prévia no tamanho aproximado do certificado. Nomes longos ficam menores; o certificado mostra uma linha só.</p>
     </div>
   );
 }
@@ -556,7 +566,7 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
                         <FormField control={form.control} name={`signatures.${index}.text`} render={({ field }) => (
                           <FormItem>
                             <FormLabel>Assinatura (texto)</FormLabel>
-                            <FormControl><Input placeholder="Como deve aparecer, ex.: Pedro Duarte" maxLength={60} {...field} value={field.value ?? ''} /></FormControl>
+                            <FormControl><Input placeholder="Como deve aparecer, ex.: Pedro Duarte" maxLength={40} {...field} value={field.value ?? ''} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
