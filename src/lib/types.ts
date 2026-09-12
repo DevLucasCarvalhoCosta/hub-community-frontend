@@ -601,7 +601,22 @@ export interface ManualSignupResponse {
     success: boolean;
     message?: string;
     account_created: boolean;
+    /** created, or pre-existing when the person was already registered */
+    signup?: EventSignup | null;
   };
+}
+
+export interface EventBatchesResponse {
+  eventBySlugOrId: {
+    id: string;
+    title: string;
+    products: {
+      id: string;
+      name: string;
+      enabled: boolean;
+      batches: { id: string; batch_number: number; value: number; enabled: boolean }[];
+    }[];
+  } | null;
 }
 
 // Attendance (Lista de Presença) types

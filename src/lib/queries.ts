@@ -844,6 +844,36 @@ export const MANUAL_SIGNUP = gql`
       success
       message
       account_created
+      signup {
+        id
+        name
+        email
+        phone_number
+        checked_in
+        checked_in_at
+        product_name
+      }
+    }
+  }
+`;
+
+// Just what the badge printer needs to register a walk-in: the event's batches.
+export const EVENT_BATCHES = gql`
+  query EventBatches($slugOrId: String!) {
+    eventBySlugOrId(slugOrId: $slugOrId) {
+      id
+      title
+      products {
+        id
+        name
+        enabled
+        batches {
+          id
+          batch_number
+          value
+          enabled
+        }
+      }
     }
   }
 `;
