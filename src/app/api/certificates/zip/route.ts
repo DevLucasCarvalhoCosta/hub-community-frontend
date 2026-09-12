@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
-import { fetchCertificateBundle, renderCertificatePdf, type CertificateBundle } from '@/lib/certificate-server';
+import { fetchCertificateBundle, renderCertificatePdf, siteBaseUrl, type CertificateBundle } from '@/lib/certificate-server';
 import { certificateFileName } from '@/lib/certificate';
 import type { CertificateConfig } from '@/lib/types';
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   }
 
   const uniqueCodes = Array.from(new Set(codes));
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const baseUrl = siteBaseUrl(request);
   const zip = new JSZip();
   const usedNames = new Set<string>();
   // Memoises certificateConfig per eventId for the lifetime of this request, so a batch of

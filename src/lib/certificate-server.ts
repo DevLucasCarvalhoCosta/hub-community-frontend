@@ -59,6 +59,27 @@ const EMPTY_CONFIG: CertificateConfig = {
  * `certificateConfig` per `eventId`, so a batch of codes for the same event only fetches the
  * config once. Pass nothing for a single-certificate fetch (the PDF route).
  */
+const PRODUCTION_SITE_URL = 'https://hubcommunity.io';
+
+/**
+ * Public base URL used inside certificates (verify link + QR). Behind a reverse
+ * proxy `request.nextUrl.origin` is the internal listener (e.g. http://localhost:4010),
+ * so prefer the configured site URL, then the forwarded host, and never emit a
+ * localhost address from a production build.
+ */
+export function siteBaseUrl(request: { headers: Headers; nextUrl: { origin: string } }): string {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+  if (configured) return configured;
+  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  if (forwardedHost) {
+    const proto = request.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || 'https';
+    return `${proto}://${forwardedHost}`;
+  }
+  const origin = request.nextUrl.origin;
+  const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?$/.test(origin);
+  return isLocal && process.env.NODE_ENV === 'production' ? PRODUCTION_SITE_URL : origin;
+}
+
 export async function fetchCertificateBundle(
   code: string,
   cache?: Map<string, Promise<CertificateConfig | null>>,
