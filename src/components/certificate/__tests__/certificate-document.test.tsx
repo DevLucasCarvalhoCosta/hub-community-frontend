@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import React from 'react';
+import { inflateSync } from 'node:zlib';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { CertificateDocument } from '../certificate-document';
 import { generateQrDataUrl } from '@/lib/certificate-qr';
@@ -31,6 +32,25 @@ const render = async (config: Parameters<typeof CertificateDocument>[0]['config'
     />,
   );
   return buffer;
+};
+
+// Y offset (inside each slot) of every horizontal stroke `width` pt long — i.e. the
+// signature lines. Content streams are Flate-compressed, so inflate them first.
+const signatureLineOffsets = (buffer: Buffer, width: number): number[] => {
+  const offsets: number[] = [];
+  const streams = buffer.toString('latin1').matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g);
+  for (const [, raw] of streams) {
+    let ops: string;
+    try {
+      ops = inflateSync(Buffer.from(raw, 'latin1')).toString('latin1');
+    } catch {
+      continue; // not a Flate stream (fonts, images)
+    }
+    for (const [, x1, y1, x2, y2] of ops.matchAll(/([\d.-]+) ([\d.-]+) m\s+([\d.-]+) ([\d.-]+) l/g)) {
+      if (y1 === y2 && Math.abs(Math.abs(Number(x2) - Number(x1)) - width) < 0.5) offsets.push(Number(y1));
+    }
+  }
+  return offsets;
 };
 
 describe('CertificateDocument', () => {
@@ -104,6 +124,21 @@ describe('CertificateDocument', () => {
     const pdf = buffer.toString('latin1');
     expect(pdf).toMatch(/GreatVibes/);
     expect(pdf).not.toMatch(/Allura/);
+  });
+
+  it('draws every signature line at the same height, whatever fills the slot', async () => {
+    // Image, typed cursive text, empty org slot and the participant's blank line must
+    // all sit on one baseline; the typed slot used to be 4pt lower than the others.
+    const buffer = await render({
+      signatures: [
+        { name: 'A', role: 'CEO', image: PNG },
+        { name: 'B', role: 'CTO', text: 'Bia Lima', font: 'allura' },
+        { name: 'C' },
+      ],
+    });
+    const offsets = signatureLineOffsets(buffer, 140);
+    expect(offsets).toHaveLength(4);
+    expect(new Set(offsets).size).toBe(1);
   });
 
   it('renders 5 compact slots with 4 org signatures plus the participant', async () => {

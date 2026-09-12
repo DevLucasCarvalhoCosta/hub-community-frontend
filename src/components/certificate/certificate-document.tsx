@@ -56,12 +56,12 @@ const styles = StyleSheet.create({
   signaturesRowCompact: { flexDirection: 'row', justifyContent: 'center', gap: 24, marginTop: 10 },
   signature: { width: 150, alignItems: 'center' },
   signatureCompact: { width: 130, alignItems: 'center' },
-  signatureImage: { height: 40, maxWidth: 140, objectFit: 'contain', marginBottom: 4 },
-  // Typed cursive signature occupies the same box as the image.
-  signatureText: { height: 44, marginBottom: 4, justifyContent: 'flex-end', alignItems: 'center' },
+  // Fixed-height box above the line, shared by every slot (image, typed text or empty),
+  // so all signature lines sit at the same height regardless of what fills them.
+  signatureBox: { height: 44, marginBottom: 4, justifyContent: 'flex-end', alignItems: 'center' },
+  signatureImage: { height: 40, maxWidth: 140, objectFit: 'contain' },
   // fontSize comes from cursiveFontSize() (scaled to the slot); maxLines is only a last resort.
   signatureTextValue: { color: '#0f172a', textAlign: 'center', maxLines: 1, textOverflow: 'ellipsis' },
-  signatureSpacer: { height: 44 },
   signatureLine: { width: 140, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
   signatureLineCompact: { width: 120, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
   signatureName: { fontSize: 10, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
@@ -143,10 +143,10 @@ export function CertificateDocument({
           <View style={compact ? styles.signaturesRowCompact : styles.signaturesRow}>
             {slots.map((slot, i) => (
               <View key={`${slot.name}-${i}`} style={compact ? styles.signatureCompact : styles.signature}>
-                {slot.image ? (
-                  <Image src={src(slot.image)!} style={styles.signatureImage} />
-                ) : slot.text ? (
-                  <View style={styles.signatureText}>
+                <View style={styles.signatureBox}>
+                  {slot.image ? (
+                    <Image src={src(slot.image)!} style={styles.signatureImage} />
+                  ) : slot.text ? (
                     <Text
                       style={[
                         styles.signatureTextValue,
@@ -156,10 +156,8 @@ export function CertificateDocument({
                     >
                       {slot.text}
                     </Text>
-                  </View>
-                ) : (
-                  <View style={styles.signatureSpacer} />
-                )}
+                  ) : null}
+                </View>
                 <View style={compact ? styles.signatureLineCompact : styles.signatureLine} />
                 <Text style={styles.signatureName}>{slot.name}</Text>
                 {slot.role ? <Text style={styles.signatureRole}>{slot.role}</Text> : null}
