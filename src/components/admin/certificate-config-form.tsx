@@ -12,9 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/use-debounce';
 import {
@@ -26,6 +28,14 @@ import {
   type CertificateConfigLike,
   type CertificateEventInfo,
 } from '@/lib/certificate';
+import {
+  DEFAULT_SIGNATURE_FONT,
+  SIGNATURE_FONTS,
+  SIGNATURE_FONT_KEYS,
+  isSignatureFont,
+  type SignatureFont,
+} from '@/lib/certificate-fonts-meta';
+import { cn } from '@/lib/utils';
 import { COPY_CERTIFICATE_CONFIG, GET_EVENT_BY_SLUG_OR_ID, UPSERT_CERTIFICATE_CONFIG } from '@/lib/queries';
 import type {
   CertificateConfig,
@@ -48,6 +58,15 @@ const mediaSchema = z.object({ id: z.string().nullable(), url: z.string().nullab
 type MediaField = z.infer<typeof mediaSchema>;
 const EMPTY_MEDIA: MediaField = { id: null, url: null };
 
+// How a signature row is filled in: an uploaded image or typed cursive text. Not persisted —
+// derived from the saved data (image wins) and overridable per row while editing.
+type SignatureMode = 'image' | 'text';
+const SIGNATURE_FONT_CLASS: Record<SignatureFont, string> = {
+  great_vibes: 'font-signature-great-vibes',
+  allura: 'font-signature-allura',
+  dancing_script: 'font-signature-dancing-script',
+};
+
 const formSchema = z.object({
   enabled: z.boolean(),
   allow_self_request: z.boolean(),
@@ -66,10 +85,26 @@ const formSchema = z.object({
     }),
   ),
   signatures: z
-    .array(z.object({ name: z.string().min(1, 'Nome obrigatório'), role: z.string().optional(), image: mediaSchema }))
+    .array(
+      z.object({
+        name: z.string().min(1, 'Nome obrigatório'),
+        role: z.string().optional(),
+        image: mediaSchema,
+        text: z.string().max(60, 'Máximo de 60 caracteres').optional(),
+        font: z.enum(SIGNATURE_FONT_KEYS).default(DEFAULT_SIGNATURE_FONT),
+      }),
+    )
     .max(4, 'No máximo 4 assinaturas'),
 });
 type FormValues = z.infer<typeof formSchema>;
+type SignatureValues = FormValues['signatures'][number];
+
+const EMPTY_SIGNATURE: SignatureValues = { name: '', role: '', image: EMPTY_MEDIA, text: '', font: DEFAULT_SIGNATURE_FONT };
+
+// Image wins when both are present (same priority the PDF uses); a fresh row starts in text mode.
+function defaultSignatureMode(s: Pick<SignatureValues, 'image'>): SignatureMode {
+  return s.image.url ? 'image' : 'text';
+}
 
 function toFormValues(config: CertificateConfig | null | undefined): FormValues {
   return {
@@ -91,6 +126,8 @@ function toFormValues(config: CertificateConfig | null | undefined): FormValues 
       name: s.name,
       role: s.role ?? '',
       image: { id: s.image_id ?? null, url: s.image ?? null },
+      text: s.text ?? '',
+      font: isSignatureFont(s.font) ? s.font : DEFAULT_SIGNATURE_FONT,
     })),
   };
 }
@@ -101,7 +138,9 @@ function parseHours(value: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-function toInput(values: FormValues): CertificateConfigInput {
+// `modes` is indexed like `values.signatures`; the inactive alternative is sent as null so
+// switching Imagem ⇄ Texto and saving really replaces one with the other.
+function toInput(values: FormValues, modes: SignatureMode[]): CertificateConfigInput {
   return {
     enabled: values.enabled,
     allow_self_request: values.allow_self_request,
@@ -113,11 +152,20 @@ function toInput(values: FormValues): CertificateConfigInput {
     logo: values.logo.id,
     background: values.background.id,
     sponsors: values.sponsors.map((s) => ({ name: s.name, url: s.url || undefined, logo: s.logo.id as string })),
-    signatures: values.signatures.map((s) => ({ name: s.name, role: s.role || undefined, image: s.image.id })),
+    signatures: values.signatures.map((s, i) => {
+      const textMode = (modes[i] ?? defaultSignatureMode(s)) === 'text';
+      return {
+        name: s.name,
+        role: s.role || undefined,
+        image: textMode ? null : s.image.id,
+        text: textMode ? s.text?.trim() || null : null,
+        font: s.font,
+      };
+    }),
   };
 }
 
-function toPreviewConfig(values: FormValues): CertificateConfigLike {
+function toPreviewConfig(values: FormValues, modes: SignatureMode[]): CertificateConfigLike {
   return {
     title: values.title,
     body_template: values.body_template,
@@ -127,7 +175,16 @@ function toPreviewConfig(values: FormValues): CertificateConfigLike {
     logo: values.logo.url,
     background: values.background.url,
     sponsors: values.sponsors.map((s) => ({ name: s.name, url: s.url, logo: s.logo.url })),
-    signatures: values.signatures.map((s) => ({ name: s.name, role: s.role, image: s.image.url })),
+    signatures: values.signatures.map((s, i) => {
+      const textMode = (modes[i] ?? defaultSignatureMode(s)) === 'text';
+      return {
+        name: s.name,
+        role: s.role,
+        image: textMode ? null : s.image.url,
+        text: textMode ? s.text : null,
+        font: s.font,
+      };
+    }),
   };
 }
 
@@ -205,6 +262,40 @@ function ImageField({ value, onChange, label, hint }: { value: MediaField; onCha
   );
 }
 
+// Text-mode fields for one signature row plus a live sample in the chosen cursive font.
+function SignatureTextFields({
+  text,
+  font,
+  textField,
+  fontField,
+}: {
+  text: string;
+  font: SignatureFont;
+  textField: React.ReactNode;
+  fontField: React.ReactNode;
+}) {
+  const sample = text.trim();
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {textField}
+        {fontField}
+      </div>
+      <div
+        className={cn(
+          'flex h-16 items-center justify-center rounded border bg-white px-3 text-3xl leading-none text-slate-900 overflow-hidden whitespace-nowrap',
+          SIGNATURE_FONT_CLASS[font],
+          !sample && 'text-slate-400',
+        )}
+        aria-label="Amostra da assinatura"
+      >
+        {sample || 'Sua assinatura'}
+      </div>
+      <p className="text-xs text-muted-foreground">Prévia da assinatura em texto. Use um nome curto: o certificado mostra uma linha só.</p>
+    </div>
+  );
+}
+
 interface CertificateConfigFormProps {
   eventId: string;
   event: CertificateEventInfo;
@@ -227,11 +318,23 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
   const [findSourceEvent] = useLazyQuery<EventResponse>(GET_EVENT_BY_SLUG_OR_ID);
   const [copySource, setCopySource] = useState('');
 
+  // Per-row Imagem/Texto choice, keyed by the field-array id so it survives reorders/removals.
+  // Rows without an explicit choice fall back to what the saved data implies.
+  const [signatureModes, setSignatureModes] = useState<Record<string, SignatureMode>>({});
+  const watchedValues = form.watch();
+  const rowModes: SignatureMode[] = signatures.fields.map(
+    (f, i) => signatureModes[f.id] ?? defaultSignatureMode(watchedValues.signatures[i] ?? EMPTY_SIGNATURE),
+  );
+  const modeFor = (index: number) => rowModes[index] ?? 'text';
+
   // Debounce a serialized snapshot: form.watch() may hand back a new object reference on
   // every render, and a string compares by value so the effect only fires on real changes.
-  const watchedJson = JSON.stringify(form.watch());
+  const watchedJson = JSON.stringify({ values: watchedValues, modes: rowModes });
   const debouncedJson = useDebounce(watchedJson, 500);
-  const previewConfig = useMemo(() => toPreviewConfig(JSON.parse(debouncedJson) as FormValues), [debouncedJson]);
+  const previewConfig = useMemo(() => {
+    const { values, modes } = JSON.parse(debouncedJson) as { values: FormValues; modes: SignatureMode[] };
+    return toPreviewConfig(values, modes);
+  }, [debouncedJson]);
   const computedHours = workloadHours({ workload_hours: null }, event);
 
   const insertPlaceholder = (key: string) => {
@@ -250,7 +353,7 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const { data } = await upsert({ variables: { eventId, data: toInput(values) } });
+      const { data } = await upsert({ variables: { eventId, data: toInput(values, rowModes) } });
       if (data?.upsertCertificateConfig) {
         onSaved(data.upsertCertificateConfig);
         toast({ title: 'Modelo salvo', description: 'O modelo do certificado foi atualizado.' });
@@ -406,7 +509,7 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Assinaturas</CardTitle>
-              <Button type="button" size="sm" variant="outline" disabled={signatures.fields.length >= 4} onClick={() => signatures.append({ name: '', role: '', image: EMPTY_MEDIA })}>
+              <Button type="button" size="sm" variant="outline" disabled={signatures.fields.length >= 4} onClick={() => signatures.append({ ...EMPTY_SIGNATURE })}>
                 <Plus className="w-4 h-4 mr-1" /> Adicionar
               </Button>
             </CardHeader>
@@ -422,9 +525,62 @@ export function CertificateConfigForm({ eventId, event, initialConfig, onSaved }
                       <FormItem><FormLabel>Cargo (opcional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                   </div>
-                  <FormField control={form.control} name={`signatures.${index}.image`} render={({ field }) => (
-                    <ImageField label="Assinatura digitalizada (opcional)" value={field.value} onChange={field.onChange} hint="Sem imagem, o certificado mostra só a linha com nome e cargo." />
-                  )} />
+                  <div className="space-y-2">
+                    <Label>Assinatura</Label>
+                    <ToggleGroup
+                      type="single"
+                      variant="outline"
+                      size="sm"
+                      className="justify-start"
+                      value={modeFor(index)}
+                      onValueChange={(value) => {
+                        if (value === 'image' || value === 'text') {
+                          setSignatureModes((prev) => ({ ...prev, [item.id]: value }));
+                        }
+                      }}
+                      aria-label="Tipo de assinatura"
+                    >
+                      <ToggleGroupItem value="image" aria-label="Assinatura por imagem">Imagem</ToggleGroupItem>
+                      <ToggleGroupItem value="text" aria-label="Assinatura em texto">Texto</ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+                  {modeFor(index) === 'image' ? (
+                    <FormField control={form.control} name={`signatures.${index}.image`} render={({ field }) => (
+                      <ImageField label="Assinatura digitalizada (opcional)" value={field.value} onChange={field.onChange} hint="Sem imagem, o certificado mostra só a linha com nome e cargo." />
+                    )} />
+                  ) : (
+                    <SignatureTextFields
+                      text={watchedValues.signatures[index]?.text ?? ''}
+                      font={watchedValues.signatures[index]?.font ?? DEFAULT_SIGNATURE_FONT}
+                      textField={
+                        <FormField control={form.control} name={`signatures.${index}.text`} render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assinatura (texto)</FormLabel>
+                            <FormControl><Input placeholder="Como deve aparecer, ex.: Pedro Duarte" maxLength={60} {...field} value={field.value ?? ''} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      }
+                      fontField={
+                        <FormField control={form.control} name={`signatures.${index}.font`} render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Fonte</FormLabel>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Escolha a fonte" /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                {SIGNATURE_FONT_KEYS.map((key) => (
+                                  <SelectItem key={key} value={key} className={SIGNATURE_FONT_CLASS[key]}>
+                                    {SIGNATURE_FONTS[key].label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      }
+                    />
+                  )}
                   <Button type="button" variant="ghost" size="sm" className="text-destructive" onClick={() => signatures.remove(index)}>
                     <Trash2 className="w-4 h-4 mr-1" /> Remover
                   </Button>

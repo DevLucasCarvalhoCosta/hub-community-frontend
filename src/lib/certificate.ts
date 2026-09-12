@@ -37,7 +37,7 @@ export interface CertificateConfigLike {
   logo?: string | null;
   background?: string | null;
   sponsors?: { name: string; logo?: string | null; url?: string | null }[];
-  signatures?: { name: string; role?: string | null; image?: string | null }[];
+  signatures?: { name: string; role?: string | null; image?: string | null; text?: string | null; font?: string | null }[];
 }
 
 export function defaultBodyTemplate(hasLocation: boolean): string {

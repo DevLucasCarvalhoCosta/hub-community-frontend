@@ -2,6 +2,7 @@ import React from 'react';
 import { print, type DocumentNode } from 'graphql';
 import { renderToBuffer, type DocumentProps } from '@react-pdf/renderer';
 import { CertificateDocument } from '@/components/certificate/certificate-document';
+import { registerSignatureFonts } from '@/lib/certificate-fonts';
 import { generateQrDataUrl } from '@/lib/certificate-qr';
 import { verifyUrl } from '@/lib/certificate';
 import { GET_CERTIFICATE_BY_CODE, GET_CERTIFICATE_CONFIG } from '@/lib/queries';
@@ -70,6 +71,8 @@ export async function fetchCertificateBundle(code: string): Promise<CertificateB
 export async function renderCertificatePdf(bundle: CertificateBundle, baseUrl: string): Promise<Buffer> {
   const url = verifyUrl(bundle.certificate.code, baseUrl);
   const qrDataUrl = await generateQrDataUrl(url);
+  // Cursive signature fonts must be registered before the tree is laid out.
+  registerSignatureFonts({ server: true });
   const element = React.createElement(CertificateDocument, {
     config: bundle.config,
     event: bundle.event,

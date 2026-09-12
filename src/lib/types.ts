@@ -1,4 +1,5 @@
 import { BlocksContent } from '@strapi/blocks-react-renderer';
+import type { SignatureFont } from '@/lib/certificate-fonts-meta';
 
 export interface Community {
   id: string;
@@ -637,6 +638,9 @@ export interface CertificateSignature {
   role?: string | null;
   image?: string | null;
   image_id?: string | null;
+  /** Typed cursive signature, used when there is no image. */
+  text?: string | null;
+  font?: SignatureFont | null;
 }
 
 export interface CertificateConfig {
@@ -667,7 +671,7 @@ export interface CertificateConfigInput {
   logo?: string | null; // Strapi media id
   background?: string | null;
   sponsors?: { name: string; logo: string; url?: string }[];
-  signatures?: { name: string; role?: string; image?: string | null }[];
+  signatures?: { name: string; role?: string; image?: string | null; text?: string | null; font?: SignatureFont }[];
 }
 
 export type CertificateSource = 'ATTENDANCE' | 'SELF_REQUEST' | 'ADMIN';

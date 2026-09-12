@@ -926,6 +926,8 @@ export const CERTIFICATE_CONFIG_FIELDS = gql`
       role
       image
       image_id
+      text
+      font
     }
   }
 `;

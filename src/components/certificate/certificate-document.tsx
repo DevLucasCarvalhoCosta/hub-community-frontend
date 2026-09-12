@@ -8,6 +8,7 @@ import {
   type CertificateConfigLike,
   type CertificateEventInfo,
 } from '@/lib/certificate';
+import { registerSignatureFonts, signatureFontFamily } from '@/lib/certificate-fonts';
 
 export interface CertificateDocumentProps {
   config: CertificateConfigLike;
@@ -56,6 +57,9 @@ const styles = StyleSheet.create({
   signature: { width: 150, alignItems: 'center' },
   signatureCompact: { width: 130, alignItems: 'center' },
   signatureImage: { height: 40, maxWidth: 140, objectFit: 'contain', marginBottom: 4 },
+  // Typed cursive signature occupies the same box as the image.
+  signatureText: { height: 44, marginBottom: 4, justifyContent: 'flex-end', alignItems: 'center' },
+  signatureTextValue: { fontSize: 26, color: '#0f172a', textAlign: 'center', maxLines: 1, textOverflow: 'ellipsis' },
   signatureSpacer: { height: 44 },
   signatureLine: { width: 140, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
   signatureLineCompact: { width: 120, borderTopWidth: 1, borderTopColor: '#94a3b8', marginBottom: 4 },
@@ -67,6 +71,9 @@ const styles = StyleSheet.create({
   qr: { width: 56, height: 56 },
 });
 
+// A signature is one line: never break words, truncate with an ellipsis instead.
+const keepWordWhole = (word: string) => [word];
+
 export function CertificateDocument({
   config,
   event,
@@ -75,6 +82,8 @@ export function CertificateDocument({
   qrDataUrl,
   server = false,
 }: CertificateDocumentProps) {
+  // Idempotent: registers the cursive fonts once per process (server) or page (browser).
+  registerSignatureFonts({ server });
   const primary = config.primary_color || DEFAULT_PRIMARY_COLOR;
   const title = config.title?.trim() || DEFAULT_TITLE;
   const body = resolveBody(config, event, certificate.name);
@@ -82,9 +91,16 @@ export function CertificateDocument({
   const sponsors = (config.sponsors || []).filter((s) => s.logo);
   const signatures = (config.signatures || []).slice(0, 4);
   // The participant always gets a blank line to sign, at the right of the org signatures.
+  // Slot priority: image → typed cursive text → blank spacer.
   const slots = [
-    ...signatures.map((s) => ({ name: s.name, role: s.role ?? null, image: s.image ?? null })),
-    { name: certificate.name, role: 'Participante', image: null },
+    ...signatures.map((s) => ({
+      name: s.name,
+      role: s.role ?? null,
+      image: s.image ?? null,
+      text: s.text?.trim() || null,
+      fontFamily: signatureFontFamily(s.font),
+    })),
+    { name: certificate.name, role: 'Participante', image: null, text: null, fontFamily: '' },
   ];
   const compact = slots.length > 4;
 
@@ -129,6 +145,15 @@ export function CertificateDocument({
                 <View key={`${slot.name}-${i}`} style={compact ? styles.signatureCompact : styles.signature}>
                   {slot.image ? (
                     <Image src={src(slot.image)!} style={styles.signatureImage} />
+                  ) : slot.text ? (
+                    <View style={styles.signatureText}>
+                      <Text
+                        style={[styles.signatureTextValue, { fontFamily: slot.fontFamily }]}
+                        hyphenationCallback={keepWordWhole}
+                      >
+                        {slot.text}
+                      </Text>
+                    </View>
                   ) : (
                     <View style={styles.signatureSpacer} />
                   )}

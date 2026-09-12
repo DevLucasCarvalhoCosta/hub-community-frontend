@@ -62,6 +62,37 @@ describe('CertificateDocument', () => {
     expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
   });
 
+  it('renders typed cursive signatures in all three fonts', async () => {
+    // `server` is set in render(), so the fonts resolve from <cwd>/public/fonts.
+    const buffer = await render({
+      signatures: [
+        { name: 'Ana', role: 'Org', text: 'Ana Souza', font: 'great_vibes' },
+        { name: 'Bia', role: 'CTO', text: 'Bia Lima', font: 'allura' },
+        { name: 'Caio', text: 'Caio Melo', font: 'dancing_script' },
+      ],
+    });
+    expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+    expect(buffer.toString('latin1')).toMatch(/\/Type \/Pages\n\/Count 1\n/);
+    const pdf = buffer.toString('latin1');
+    // Embedded font dictionaries name the families, so all three must show up.
+    expect(pdf).toMatch(/GreatVibes/);
+    expect(pdf).toMatch(/Allura/);
+    expect(pdf).toMatch(/DancingScript/);
+  });
+
+  it('prefers the image over typed text and falls back to the default font', async () => {
+    const buffer = await render({
+      signatures: [
+        { name: 'A', image: PNG, text: 'ignored', font: 'allura' },
+        { name: 'B', text: 'No font set' },
+      ],
+    });
+    expect(buffer.subarray(0, 4).toString()).toBe('%PDF');
+    const pdf = buffer.toString('latin1');
+    expect(pdf).toMatch(/GreatVibes/);
+    expect(pdf).not.toMatch(/Allura/);
+  });
+
   it('renders 5 compact slots with 4 org signatures plus the participant', async () => {
     const buffer = await render({
       signatures: [
