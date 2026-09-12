@@ -174,6 +174,10 @@ export interface User {
   name?: string;
   avatar?: string;
   phone?: string;
+  /** digits only */
+  cpf?: string;
+  /** ISO yyyy-mm-dd */
+  date_of_birth?: string;
 }
 
 export interface SignUpInput {
@@ -196,6 +200,8 @@ export interface SignInResponse {
     username: string;
     name: string;
     phone: string;
+    cpf?: string | null;
+    date_of_birth?: string | null;
     id: string;
   };
 }

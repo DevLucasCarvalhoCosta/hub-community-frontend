@@ -324,7 +324,24 @@ export const SIGN_IN = gql`
       username
       name
       phone
+      cpf
+      date_of_birth
       id
+    }
+  }
+`;
+
+// The authenticated user's own profile, read fresh from the server.
+export const ME = gql`
+  query Me {
+    me {
+      id
+      username
+      email
+      name
+      phone
+      cpf
+      date_of_birth
     }
   }
 `;
