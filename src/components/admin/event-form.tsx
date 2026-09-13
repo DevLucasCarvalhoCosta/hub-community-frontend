@@ -323,7 +323,7 @@ export function EventForm({
   };
 
   const handleFormSubmit = async (data: CreateEventFormValues) => {
-    const eventId = await onSubmit(data);
+    let uploadedImagesResult: string[] | undefined = undefined;
 
     // 1. Upload cover image FIRST if a new file was selected
     if (coverImageFile) {

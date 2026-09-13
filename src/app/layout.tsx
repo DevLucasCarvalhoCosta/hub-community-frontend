@@ -6,7 +6,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { PageTransitionProvider } from '@/components/animations';
 import { ApolloProviderWrapper } from '@/components/apollo-provider';
 import { CookieConsentBanner } from '@/components/cookie-consent-banner';
-import { ErrorBoundary } from '@/components/error-boundary';
+import { RouteErrorBoundary } from '@/components/error-boundary';
 import { FirebaseProvider } from '@/components/firebase-provider';
 import { Footer } from '@/components/footer';
 import { CompleteProfileModal } from '@/components/complete-profile-modal';
@@ -65,11 +65,11 @@ export default function RootLayout({
                     disableTransitionOnChange
                   >
                     <Navigation />
-                    <ErrorBoundary>
+                    <RouteErrorBoundary>
                       <PageTransitionProvider>
                         {children}
                       </PageTransitionProvider>
-                    </ErrorBoundary>
+                    </RouteErrorBoundary>
                     <Toaster />
                     <SonnerToaster richColors position="top-right" />
                     <Footer />

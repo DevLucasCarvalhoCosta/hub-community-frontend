@@ -85,6 +85,3 @@ export const certificateSearchSchema = z.object({
 });
 
 export type CertificateSearchFormValues = z.infer<typeof certificateSearchSchema>;
-
-// Exporta a função de validação de CPF para uso externo
-export { isValidCPF };

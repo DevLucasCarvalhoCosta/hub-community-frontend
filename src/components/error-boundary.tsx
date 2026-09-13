@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface ErrorBoundaryProps {
@@ -10,6 +11,8 @@ interface ErrorBoundaryProps {
   fallback?: ReactNode;
   /** Callback chamado quando um erro é capturado */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  /** Quando este valor muda, o boundary sai do estado de erro (ex: pathname) */
+  resetKey?: unknown;
 }
 
 interface ErrorBoundaryState {
@@ -43,6 +46,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     // Callback opcional para logging externo (analytics, Sentry, etc)
     this.props.onError?.(error, errorInfo);
+  }
+
+  componentDidUpdate(prevProps: ErrorBoundaryProps): void {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.handleReset();
+    }
   }
 
   handleReset = (): void => {
@@ -122,4 +131,18 @@ export function withErrorBoundary<P extends object>(
       </ErrorBoundary>
     );
   };
+}
+
+/**
+ * Error Boundary que se recupera automaticamente ao navegar para outra rota.
+ * Use em layouts persistentes (ex: root layout), onde o boundary não é
+ * remontado entre navegações do App Router.
+ */
+export function RouteErrorBoundary({ children, ...props }: Omit<ErrorBoundaryProps, 'resetKey'>) {
+  const pathname = usePathname();
+  return (
+    <ErrorBoundary resetKey={pathname} {...props}>
+      {children}
+    </ErrorBoundary>
+  );
 }

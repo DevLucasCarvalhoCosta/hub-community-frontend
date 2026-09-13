@@ -241,16 +241,16 @@ export function AuthModal({ isOpen, onClose, redirectUrl }: AuthModalProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email ou Username</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <FormControl>
                           <Input
                             placeholder="seu@email.com ou username"
                             className="pl-10"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -262,29 +262,29 @@ export function AuthModal({ isOpen, onClose, redirectUrl }: AuthModalProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <FormControl>
                           <Input
                             type={showSignInPassword ? 'text' : 'password'}
                             placeholder="Digite sua senha"
                             className="pl-10 pr-10"
                             {...field}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setShowSignInPassword(!showSignInPassword)}
-                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
-                            aria-label={showSignInPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                          >
-                            {showSignInPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                        <button
+                          type="button"
+                          onClick={() => setShowSignInPassword(!showSignInPassword)}
+                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+                          aria-label={showSignInPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                        >
+                          {showSignInPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -328,16 +328,16 @@ export function AuthModal({ isOpen, onClose, redirectUrl }: AuthModalProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <FormControl>
                           <Input
                             placeholder="seu_username"
                             className="pl-10"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -349,17 +349,17 @@ export function AuthModal({ isOpen, onClose, redirectUrl }: AuthModalProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <FormControl>
                           <Input
                             type="email"
                             placeholder="seu@email.com"
                             className="pl-10"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -371,17 +371,17 @@ export function AuthModal({ isOpen, onClose, redirectUrl }: AuthModalProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Telefone WhatsApp (opcional)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <FormControl>
                           <Input
                             type="tel"
                             placeholder="+55 11 98765-4321"
                             className="pl-10"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -393,29 +393,29 @@ export function AuthModal({ isOpen, onClose, redirectUrl }: AuthModalProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <FormControl>
                           <Input
                             type={showSignUpPassword ? 'text' : 'password'}
                             placeholder="Digite uma senha forte"
                             className="pl-10 pr-10"
                             {...field}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
-                            aria-label={showSignUpPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                          >
-                            {showSignUpPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                        <button
+                          type="button"
+                          onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+                          aria-label={showSignUpPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                        >
+                          {showSignUpPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -445,17 +445,17 @@ export function AuthModal({ isOpen, onClose, redirectUrl }: AuthModalProps) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <FormControl>
                           <Input
                             type="email"
                             placeholder="seu@email.com"
                             className="pl-10"
                             {...field}
                           />
-                        </div>
-                      </FormControl>
+                        </FormControl>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}

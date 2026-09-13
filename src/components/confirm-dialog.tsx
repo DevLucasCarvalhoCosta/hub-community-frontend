@@ -74,7 +74,13 @@ export function ConfirmDialog({
   disabled = false,
 }: ConfirmDialogProps) {
   const handleConfirm = async () => {
-    await onConfirm();
+    try {
+      await onConfirm();
+    } catch (error) {
+      // O caller é responsável pelo feedback (toast); aqui só evitamos
+      // uma unhandled rejection que deixaria o diálogo travado.
+      console.error('ConfirmDialog: onConfirm failed', error);
+    }
   };
 
   return (
