@@ -229,6 +229,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: result.data.signIn.username || input.identifier.split('@')[0],
           name: result.data.signIn.name || undefined,
           phone: result.data.signIn.phone || undefined,
+          cpf: result.data.signIn.cpf || undefined,
+          date_of_birth: result.data.signIn.date_of_birth || undefined,
         };
 
         saveToStorage(user, result.data.signIn.token);
